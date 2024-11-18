@@ -1,15 +1,26 @@
-from Swarm import Swarm, Agent
-from ..adventureai import (
-    author,
-    narrator,
-    illustrator,
-)
+from swarm import Swarm, Agent
 from dotenv import load_dotenv
+
+"""
+Placeholder for triage agent instructions
+
+
+                "3. Take the output from author agent "
+                "and hand it to the illustrator agent. \n"
+                "Illustrator agent will then generate an image.\n"
+                "4. Take the output from author agent "
+                "and hand it to the navigator agent. \n"
+                "Navigator agent will then determine the location of the story."
+"""
 
 
 class TriageAgent:
-    def __init__(self, name, description, location):
+    def __init__(self, author, narrator, illustrator):
         load_dotenv()
+        self.author = author.agent
+        self.narrator = narrator.agent
+        # Jason Börn is on the case with this one
+        # self.illustrator = illustrator.agent
         self.client = Swarm()
         self.agent = Agent(
             name="Dungeon Master",
@@ -17,52 +28,77 @@ class TriageAgent:
             instructions=(
                 "You are a triage agent that connects several "
                 "agents working together to write a story for a video game.\n"
-                "Your task is to pass information between agents that generate content.\n"
-                "Your input will be a string consisting of a story, player choice, player success."
+                "Your task is to pass information "
+                "between agents that generate content.\n"
+                "Your input will be a string consisting "
+                "of a story, player choice, player success."
                 "You should do things in this order:\n"
                 "1. Give the entire input string to the author agent. "
                 "Author agent will then generate the next step in the story.\n"
-                "2. Take the output from author agent and hand it to the narrator agent. \n"
-                "Narrator agent will then generate a sound file."
-                "3. Take the output from author agent and hand it to the illustrator agent. \n"
-                "Illustrator agent will then generate an image."
-                "4. Take the output from author agent and hand it to the navigator agent. \n"
-                "Navigator agent will then determine the location of the story."
+                "please work with what you have for now."
+                "2. Take the output from author agent "
+                "and hand it to the narrator agent. \n"
+                "Narrator agent will then generate a sound file.\n"
+                "If no content is available to sent to the narrator agent, send them this:"
+                "'I like bananas and cookies'"
+                "As for now, you are in production and are missing some instructions, "
             ),
             functions=[
-                self.transfer_to_author,
-                self.transfer_to_illustrator,
-                self.transfer_to_narrator,
+                self._transfer_to_author,
+                self._transfer_to_illustrator,
+                self._transfer_to_narrator,
             ],
         )
-
-        # Player information. Should be moved to database:
-        self.player_name = name
-        self.player_description = description
-
-        self.previous_story = None
+        # Player information should be moved to database:
+        self.player_name = None
+        self.player_description = None
+        # This should stay here
+        self.previous_story = "This is the start of our protagonists journey!"
         self.current_story = None
-        self.current_location = location
+        self.current_location = None
+        self.choice = None
+        self.success = True  # Lets be nice in the tutorial
         self.current_image = None
-        self.current_audio = None
+        self.current_voiceover = None
         self.context_string = None
+        self.new_player()
 
-    def set_context(self, choice, success):
+    def new_player(self):
+        # self.player_name = input("What is your name?\n > ")
+        # self.player_description = input("Tell us about yourself!\n > ")
+        # self.current_location = input("Where does your story begin? \n > ")
+        # self.choice = input("And what would you like to do?\n > ")
+
+        self.player_name = "Felix"
+        self.player_description = "Im a very shy boy"
+        self.current_location = "Paris"
+        self.choice = "I want to eat a baugette"
+
+    def next_story(self):
+        self._set_context()
+        response = self._make_api_call()
+        if self._extract_response(response):
+            # return self.current_story
+            pass
+
+    def player_turn(self):
+        self.choice = input(f"\nWhat does {self.player_name} do next?\n > ")
+        if self.choice == "":
+            self.choice = "I start screaming 'I HAVE NO IMAGINATION!'"
+
+        return self.choice
+
+    def _set_context(self):
         self.context_string = (
-            f"Protagonist name: {self.playername}\n"
+            f"Protagonist name: {self.player_name}\n"
             f"Protagonist description: {self.player_description}\n"
             f"Current location: {self.current_location}"
             f"Previous story: {self.previous_story}"
-            f"{self.player_description} attempted to: {choice}\n"
-            f"{self.player_description} was successful with their action: {success}"
+            f"{self.player_description} said they want to: '{self.choice}'\n"
+            f"{self.player_description} was successful with their action = {self.success}"
         )
 
-    def next_story(self, choice, success):
-        response = self._make_api_call(choice, success)
-        new_story = self._extract_response(response)
-        return new_story
-
-    def _make_api_call(self, choice, success) -> str:
+    def _make_api_call(self) -> str:
         response = self.client.run(
             agent=self.author,
             messages=[
@@ -74,8 +110,8 @@ class TriageAgent:
             # Seems our agent can't access context variables
             context_variables={
                 "previous_story": self.previous_story,
-                "player_choice": choice,
-                "player_choice_successful": success,
+                "player_choice": self.choice,
+                "player_choice_successful": self.success,
             },
         )
 
@@ -83,19 +119,32 @@ class TriageAgent:
 
     def _extract_response(self, response) -> str:
         """THIS NEEDS TO BE CALIBRATED TO FIT THE NEW RESPONSE WITH MULTIPLE AGENTS"""
-        next_story = response.messages[0]["content"]
-        self.previous_story = next_story
+        for message in response.messages:
+            if message["sender"] == "The Author":
+                self.current_story = message["content"]
+                continue
 
-        return next_story
+            if message["sender"] == "The Narrator":
+                self.current_voiceover = message["content"]
+                continue
 
-    def transfer_to_author(self):
+            if message["sender"] == "The Illustrator":
+                self.current_image = message["content"]
+
+        # innehåller bara ett svar från author. Why?
+        print(response)
+        # next_story = response.messages[0]["content"]
+        # self.previous_story = next_story
+        # return next_story
+
+    def _transfer_to_author(self):
         """Transfers to the author agent"""
-        return author.agent
+        return self.author.agent
 
-    def transfer_to_narrator(self):
+    def _transfer_to_illustrator(self):
         """Transfers to the author agent"""
-        return narrator.agent
+        return self.illustrator.agent
 
-    def transfer_to_illustrator(self):
+    def _transfer_to_narrator(self):
         """Transfers to the author agent"""
-        return illustrator.agent
+        return self.narrator.agent

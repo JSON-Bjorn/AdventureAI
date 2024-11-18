@@ -82,7 +82,16 @@ from utils.database import Database
 from utils.dice_roller import DiceRoller
 
 
-def play_game():
+def instantialize_agents():
+    dice_roller = DiceRoller()
+    author = TextAgent()
+    narrator = SoundAgent()
+    illustrator = None  # ImageAgent()
+    dungeon_master = TriageAgent(author, narrator, illustrator)
+    game_loop(dice_roller, dungeon_master)
+
+
+def game_loop(dice_roller, dungeon_master):
     """
     Main game loop that initializes and coordinates all components.
 
@@ -97,46 +106,43 @@ def play_game():
     8. Handle game over conditions
     """
 
-    name = input("What is your name?\n > ")
-    description = input("Tell us about yourself!\n > ")
-    location = input("Where does your story begin? \n > ")
-    choice = input("And what would you like to do?\n > ")
-    success = True
-
-    dungeon_master = TriageAgent(name, description, location)
-    dice_roller = DiceRoller()
-    author = TextAgent()
-    narrator = SoundAgent()
-    illustrator = None  # ImageAgent()
-
     game_active = True
     while game_active:
-        current_story: str = dungeon_master.next_story(choice, success)
-        # current_image = illustrator.get_image(current_story)
-        display_media(f"\n{current_story}")
+        dungeon_master.next_story()
 
-        player_choice: str = input(
-            f"\nWhat does {author.player_name} do next?\n > "
-        )
-        if player_choice == "exit":
-            game_active = False
+        # These needs to be async?
+        show_text(text=dungeon_master.current_story)
+        play_voiceover(audio=dungeon_master.current_voiceover)
+        # show_image(image=dungeon_master.current_image)
 
-        # Dice roll can also be False
+        player_choice: str = dungeon_master.player_turn()
+        if player_choice.lower().strip() == "exit":
+            game_active = True
+            continue
+
         dice_roll_needed: int = dice_roller.assess_situation(
-            current_story, player_choice
+            dungeon_master.current_story, player_choice
         )
 
         if dice_roll_needed:
-            display_media(f"\nTo do that, you must roll {dice_roll_needed}")
+            show_text(f"\nTo do that, you must roll {dice_roll_needed}")
             input("Roll dice!\n")
             (success, player_roll) = dice_roller.roll_dice(dice_roll_needed)
-            display_media(f"You rolled a: {player_roll}!\n")
+            show_text(f"You rolled a: {player_roll}!\n")
 
 
-def display_media(current_story):
-    print("\n" * 50)
-    print(current_story)
+def show_text(text):
+    print("\n" * 20)
+    print(f"\n{text}")
+
+
+def play_voiceover(audio):
+    pass
+
+
+def show_image(image):
+    pass
 
 
 if __name__ == "__main__":
-    play_game()
+    instantialize_agents()

@@ -1,8 +1,10 @@
-from Swarm import Swarm, Agent
+from swarm import Swarm, Agent
+from dotenv import load_dotenv
 
 
 class SoundAgent:
     def __init__(self):
+        load_dotenv()
         self.client = Swarm()
         self.agent = Agent(
             name="The Narrator",
