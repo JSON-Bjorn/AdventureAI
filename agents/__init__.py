@@ -1,5 +1,5 @@
 from .text_agent import TextAgent
-from .image_agent import ImageAgent
+from .illustrator_agent import IllustratorAgent
 from .sound_agent import SoundAgent
 from .triage_agent import TriageAgent
 
@@ -7,7 +7,7 @@ from .triage_agent import TriageAgent
 
 __all__ = [
     "TextAgent",
-    "ImageAgent",
+    "IllustratorAgent",
     "SoundAgent",
     "TriageAgent",
 ]

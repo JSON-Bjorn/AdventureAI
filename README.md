@@ -41,3 +41,35 @@ Tills vi funnit ett svar på denan fråga har vi två alternativ;
 - Kör bildgenerering lokalt. Då måste användaren själv godkänna användarvillkoren och tar eget ansvar.
 Lagra inga bilder i databasen. Utifall att vi råkar generera olagligheter lokalt.
 - Generera bilder med den politiskt korrekta fadersfiguren, Dall-E.
+
+## Björn update
+
+# Installation Guide for Illustrator Agent
+
+## 1. Model Setup
+1. Create a `/models` directory in your AdventureAI folder if it doesn't exist
+2. Download the model from: https://civitai.com/models/133005?modelVersionId=920957
+   - Select "Jugg_Xl_Lightning_by_RD" and click Download
+3. Place the downloaded .safetensors file in the `/models` directory
+
+## 2. Environment Setup
+Add this line to your `.env` file (create it if it doesn't exist):
+IMAGE_MODEL="juggernautXL_juggXILightningByRD"
+
+
+## 3. Dependencies Installation
+Run these commands in order:
+```bash
+# 1. Install PyTorch with CUDA 11.8 support
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 2. Install required dependencies
+pip install pillow
+pip install diffusers
+pip install python-dotenv
+pip install safetensors
+pip install transformers
+pip install accelerate
+
+# 3. Optional optimization (not supported on Windows)
+pip install xformers  # Only for Linux/Mac
