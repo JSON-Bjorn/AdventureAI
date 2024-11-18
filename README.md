@@ -12,35 +12,22 @@ Det var i alla fall 3.10 som gällde för att köra LLM lokkalt (?) eller var de
 - Kör adventureai.py för att starta applikationen
 
 # Current state
-Just nu så är programmet inte funktionellt.
-Jag håller på att emigrera funktionaliteten i text agent.
-Tanken är att varje klass ska vara minimal.
-I alla agenter (förutom triage) ska vi bara ha agentens instruktioner eventuellt ett gäng instansvariabler.
-Tanken var att text agent skulle hålla 'player_name', 'previous_story' osv och sammanställa det i en sträng som en enda input till agenten.
-Detta hade jag tydligen gjort i Triage vilket kanske är att föredra (enbart för att det redan är gjort).
+Programmet är inte funktionellt.
+Vi kan generera lite story från openAI.
+Bildgenereringen funkar med test filen. Inte i main filen.
+Nästa steg är att göra allting asyncronous.
+Just nu är problemet att vi inte hinner generera bilden innan python försöker öppna den, så det borde vara en easy fix.
 
-Utöver detta så ska jag börja titta på sound agent, specifikt the narrator.
-Det verkade sist när vi pratade som att vi skulle använda oss av swarm exklusivt.
-Detta behöver så klart inte vara OpenAI, men de har allt vi behöver (och jag har tokens där som brinner inne annars).
-Jag är öppen för att köra saker lokalt men kommer så klart att prioritera användar-upplevelsen med långa loading screens osv.
-Säga vad man vill, OpenAI har lite mer GPU än vad vi har..
+Steget efter det är att försöka få triage agent att kommunicera med sound agent.
+Jag lyckades inte få till intended funktionalitet:
+- Triage skickar context till Author.
+- Author svarar med ny story. So far so good!
+- Triage förmedlar nya storyn till Narrator (Här går det åt helvete)
+- Narator ger tillbaka en wav fil.
+Detta har troligtvis med att jag inte ger rätt tools till triage för att kunna skapa konversationer mellan agenterna.
+Trioligtvis behöver vi göra en metod som appendar meddelanden och returnerar chat history mellan agents.
 
-Vi pratade även om det rent juridiska kring detta projekt.
-Vi vill verkligen inte censurera en fiktiv berättelse i ett datorspel.
-Men om vi ska hålla data från en användare, särskilt i bildformat, som innehåller olagligt innehåll så är det troligtvis vi som blir ansvariga.
-Vi bör titta vidare på användarvillkor, ha ett system som upptäcker olaglig content och flaggar den, vi bör definitivt ha ett sätt som tar bort denna content direkt.
-En ganska enkel men väldigt tråkig (och kostsam) lösning på detta är att använda OpenAI exklusivt eftersom modellerna vägrar generera olaglig content.
-
-Vi kan diskutera huruvida AI genererat material kan vara olagligt eller om det bara defineras som konst.
-Jag vet till exempel inte hur det skulle se ut juridiskt om jag ställde mig med en pensel och målade en tavla varje gång användaren ber om det.
-Skulle det vara olagligt? Är det olagligt om jag säljer tavlan eller räcker det med att den är undangömd i min källare aka databas?
-
-Text kan omöjligen vara olagligt. Det finns ju rätt så sjuka böcker där ute..
-Tills vi funnit ett svar på denan fråga har vi två alternativ;
-
-- Kör bildgenerering lokalt. Då måste användaren själv godkänna användarvillkoren och tar eget ansvar.
-Lagra inga bilder i databasen. Utifall att vi råkar generera olagligheter lokalt.
-- Generera bilder med den politiskt korrekta fadersfiguren, Dall-E.
+Vi behöver också uppdatera requirements filen.
 
 ## Björn update
 
