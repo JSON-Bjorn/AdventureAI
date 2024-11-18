@@ -26,7 +26,7 @@ async def test_image_generation():
             image = await agent.generate_scene_image(
                 description=scene_description,
                 width=512,  # You can adjust width/height as needed
-                height=748,
+                height=768,
             )
 
             if image:
