@@ -1,90 +1,39 @@
-# AdventureAI
-Choose your own adventure AI text game! I was inspired from our little Hackathon project creating a similar game using OpenAI Swarm agents.
-This project is planned to be using langchain and a vector database to create a better user experience.
+# Allmän info om denna branch
+School branchen är en nedskalad beta version av vår ambition för det färdiga projektet.
+Det fick bli så på grund av deadlines med databas-kursen.
+Det kommer dock att funka som en väldigt bra start för projektet i sin helhet och vi kommer självklart att fortsätta arbeta på detta feter att uppgiften är inlämnad (om vi nu FÅR lämna in detta som uppgift, annars är vi cooked!).
 
-Please star and follow!
+Jag har clearat den här filen för school-branchen så att vi kan använda oss av den för att kommunicera vad vi gjort för varje push (om vi vill) tillsammans med lite basic info som kan vara användbar för oss att ha som cheat sheet istället för att gräva i dokumentation och discord DMs.
 
-We just uncovered our next project for our class which is to learn PostgreSQL. Therefor, I have decided we are going to use that as our database to store the data together with pg_embeddings.
+# Setup
+- Se till att köra pip install requirements i ett venv med python version 3.10.
+Det var i alla fall 3.10 som gällde för att köra LLM lokkalt (?) eller var det TTS paketet?
 
-Decided on an LLM model to use for generation, due to its unhinged restrictions and filter, we're going to use Mistral's 7b Dolphin model Q4 K-M
-https://huggingface.co/TheBloke/dolphin-2.0-mistral-7B-GGUF
+# Current state
+Just nu så är programmet inte funktionellt.
+Jag håller på att emigrera funktionaliteten i text agent.
+Tanken är att varje klass ska vara minimal.
+I alla agenter (förutom triage) ska vi bara ha agentens instruktioner eventuellt ett gäng instansvariabler.
+Tanken var att text agent skulle hålla 'player_name', 'previous_story' osv och sammanställa det i en sträng som en enda input till agenten.
+Detta hade jag tydligen gjort i Triage vilket kanske är att föredra (enbart för att det redan är gjort).
 
-How this implementation is going to look is unclear at the moment, but we will figure it out as we go.
+Utöver detta så ska jag börja titta på sound agent, specifikt the narrator.
+Det verkade sist när vi pratade som att vi skulle använda oss av swarm exklusivt.
+Detta behöver så klart inte vara OpenAI, men de har allt vi behöver.
+Jag är öppen för att köra saker lokalt men kommer så klart att prioritera användar-upplevelsen med långa loading screens osv.
+Säga vad man vill, OpenAI har lite mer GPU än vad vi har..
 
-# The Story so far
+Vi pratade även om det rent juridiska kring detta projekt.
+Vi vill verkligen inte censurera en fiktiv berättelse i ett datorspel.
+Men om vi ska hålla data från en användare, särskilt i bildformat, som innehåller olagligt innehåll så är det troligtvis vi som blir ansvariga.
+Vi bör titta vidare på användarvillkor, ha ett system som upptäcker olaglig content och flaggar den, vi bör definitivt ha ett sätt som tar bort denna content direkt.
+En ganska enkel men väldigt tråkig (och kostsam) lösning på detta är att använda OpenAI exklusivt eftersom modellerna vägrar generera olaglig content.
 
-Invited Felix to colab on this project since we made the Hackathon project together and he is an awesome dev with good ideas. I wrote some placeholder code and docstrings to outline how the program is thought to function and decided on a few packages that we will use. For now I have imported the GPT4All free LLM but I plan on using a Mistral model without censorship (since this is important to us). A choose your own adventure game should only be limited by your mind (and laws). This makes this game 18+ when it is realeased eventually. 
+Vi kan diskutera huruvida AI genererat material kan vara olagligt eller om det bara defineras som konst. Jag vet till exempel inte hur det skulle se ut juridiskt om jag ställde mig med en pensel och målade en tavla varje gång användaren ber om det. Skulle det vara olagligt? Är det olagligt om jag säljer tavlan eller räcker det med att den är undangömd i min källare aka databas?
 
-# Thoughts
+Text kan omöjligen vara olagligt. Det finns ju rätt så sjuka böcker där ute..
+Tills vi funnit ett svar på denan fråga har vi två alternativ;
 
-* Decide on an LLM to use for local generation
-
-* Decide how we want to ship the final product. Interactive webpage? Standalone app? Mobile app? API for integration for larger scale? The possibilitys are endless.
-
-* Choose an agent framework that suits our needs and skills (OpenAI Swarm or Langchain Agents)
-
-* Think of more packages or agents we might need to make the experience better
-
-* Decide on what we want to use for rendering everything together eventually (original plan is to make the game kind of like a comic book rendering (Tkinter?))
-
-# TODO
-
-* Get TextAgent to implement basic storytelling functionality in using a local LLM
-
-* Get DatabaseAgent to connect to the database and save information in the correct format
-
-* Get ImageAgent to render images in 512x512 focusing on accuracy and speed of rendering
-
-* Get DiceAgent to figure out when to make a DiceRoll and when to pass a task as a trivial task
-
-* Get CharacterAgent implemented with the DatabaseAgent and the ImageAgent and call it as the first thing the player gets to do in adventureai.py
-
-* Get DeathAgent to figure out when you are dead or when CombatAgent tells you that life is over OR when you make a daredevil move and fail miserably (jumping comes to mind)
-
-* Get SoundAgent to play appropriate/inappropriate sounds based on the context of the story and actions of the player
-
-* Get LootAgent to randomize loot from encounters (low chance of useful, high chance of fun) with NPCS/Monsters and store this together with the players inventory with CharacterAgent.
-
-* Get NPCAgent to dynamically identify bigger story characters as NPCs and store their data together with their loot while also showing an image of them based on their description.
-
-* Get CombatAgent to dynamically identify a situation or action that requires a check if the player or monster succeeds and how much damage someone takes depending on the context (fork to knee, small problem. Claymore to retina, huge problem.)
-
-# CONTINUOUS WORK
-
-* Writing the adventureai.py file logic based on what is implemented gradually.
-
-* Testing the game, documenting bugs and errors.
-
-* Writinging a correct documentation in a separate file.
-
-# IMPLEMENTED
-
-Here we update the README.md in the main branch to show what we are currently working on implementing.
-
-* Bjorn
-
-Wrote extensive plan and updated file structure. We need a meeting soon to discuss these changes before we start implementing.
-
-* Felix
-- 
-
-# Huge Update Breakdown
-
-We decided we don't need all the previously specified agents, so this is the updated structure along with some packages we might use
-
-* Folders
-agents/: Contains all AI-driven components of the game.
-utils/: Contains utility classes and functions.
-models/: Contains data models for the game state and entities.
-tests/: Contains unit tests for each component that needs testing.
-
-* text_agent.py: Handles story generation using Mistral LLM.
-* image_agent.py: Generates comic-style images using Stable Diffusion.
-* sound_agent.py: Manages audio and voice generation with Bark/AudioCraft.
-* npc_agent.py: Controls NPC behavior and dialogue.
-* loot_agent.py: Handles item generation and distribution.
-* combat_agent.py: Manages the battle system and death mechanics.
-* database.py: Interface for PostgreSQL using SQLAlchemy.
-* dice_roller.py: Utility for probability and random event handling.
-* game_models.py: Defines ORM models for the database.
-* adventureai.py: The main game loop script.
+- Kör bildgenerering lokalt. Då måste användaren själv godkänna användarvillkoren och tar eget ansvar.
+- Lagra inga bilder i databasen. Utifall att vi råkar generera olagligheter lokalt.
+- Generera bilder med den politiskt korrekta fadersfiguren, Dall-E.
