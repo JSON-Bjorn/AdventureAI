@@ -219,7 +219,7 @@ class IllustratorAgent:
                     negative_prompt=negative_prompt,
                     width=width,
                     height=height,
-                    num_inference_steps=6,  # Balanced speed and quality
+                    num_inference_steps=4,  # Balanced speed and quality
                     guidance_scale=2.0,  # Moderate guidance for natural results
                     num_images_per_prompt=1,
                     generator=generator,
