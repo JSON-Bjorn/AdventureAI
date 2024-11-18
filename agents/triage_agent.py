@@ -1,5 +1,6 @@
 from swarm import Swarm, Agent
 from dotenv import load_dotenv
+import asyncio
 
 """
 Placeholder for triage agent instructions
@@ -19,7 +20,6 @@ class TriageAgent:
         load_dotenv()
         self.author = author.agent
         self.narrator = narrator.agent
-        # Jason Börn is on the case with this one
         # self.illustrator = illustrator.agent
         self.client = Swarm()
         self.agent = Agent(
@@ -39,8 +39,8 @@ class TriageAgent:
                 "2. Take the output from author agent "
                 "and hand it to the narrator agent. \n"
                 "Narrator agent will then generate a sound file.\n"
-                "If no content is available to sent to the narrator agent, send them this:"
-                "'I like bananas and cookies'"
+                "If no content is available to send to the narrator agent, send them this:"
+                "'Once upon a fucking time, this and that. EXPLOSIONS!'"
                 "As for now, you are in production and are missing some instructions, "
             ),
             functions=[
@@ -61,7 +61,29 @@ class TriageAgent:
         self.current_image = None
         self.current_voiceover = None
         self.context_string = None
+        self._initialize_image_pipeline()
         self.new_player()
+
+    def _transfer_to_author(self):
+        """Transfers to the author agent"""
+        return self.author.agent
+
+    def _transfer_to_illustrator(self):
+        """Transfers to the author agent"""
+        return self.illustrator.agent
+
+    def _transfer_to_narrator(self):
+        """Transfers to the author agent"""
+        return self.narrator.agent
+
+    def get_text(self):
+        return self.current_story
+
+    def get_voiceover(self):
+        return self.current_voiceover
+
+    def get_image(self):
+        return self.current_image
 
     def new_player(self):
         # self.player_name = input("What is your name?\n > ")
@@ -77,6 +99,8 @@ class TriageAgent:
     def next_story(self):
         self._set_context()
         response = self._make_api_call()
+        self._generate_image()
+
         if self._extract_response(response):
             # return self.current_story
             pass
@@ -137,14 +161,23 @@ class TriageAgent:
         # self.previous_story = next_story
         # return next_story
 
-    def _transfer_to_author(self):
-        """Transfers to the author agent"""
-        return self.author.agent
+    async def _initialize_image_pipeline(self):
+        await self.illustrator.initialize()
 
-    def _transfer_to_illustrator(self):
-        """Transfers to the author agent"""
-        return self.illustrator.agent
+    async def _generate_image(self):
+        try:
+            print("Generating image..")
 
-    def _transfer_to_narrator(self):
-        """Transfers to the author agent"""
-        return self.narrator.agent
+            image = await self.illustrator.generate_scene_image(
+                description=self.current_story, width=512, height=768
+            )
+
+            if image:
+                image.save("TEST_IMAGE.png")
+                print("Image saved")
+                self.current_image = image
+            else:
+                print("Failed to generate image.")
+        finally:
+            await self.illustrator.cleanup()
+            print("Cleanup completed")

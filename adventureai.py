@@ -75,23 +75,24 @@ Requirements:
 from agents import (
     TextAgent,
     SoundAgent,
-    ImageAgent,
+    IllustratorAgent,
     TriageAgent,
 )
 from utils.database import Database
 from utils.dice_roller import DiceRoller
+from PIL import Image
 
 
 def instantialize_agents():
     dice_roller = DiceRoller()
     author = TextAgent()
     narrator = SoundAgent()
-    illustrator = None  # ImageAgent()
+    illustrator = IllustratorAgent()
     dungeon_master = TriageAgent(author, narrator, illustrator)
     game_loop(dice_roller, dungeon_master)
 
 
-def game_loop(dice_roller, dungeon_master):
+async def game_loop(dice_roller, dungeon_master):
     """
     Main game loop that initializes and coordinates all components.
 
@@ -110,10 +111,12 @@ def game_loop(dice_roller, dungeon_master):
     while game_active:
         dungeon_master.next_story()
 
-        # These needs to be async?
-        show_text(text=dungeon_master.current_story)
-        play_voiceover(audio=dungeon_master.current_voiceover)
-        # show_image(image=dungeon_master.current_image)
+        text = dungeon_master.get_text()
+        show_text(text)
+        audio = dungeon_master.get_voiceover()
+        play_voiceover(audio)
+        image = dungeon_master.get_image()
+        show_image(image)
 
         player_choice: str = dungeon_master.player_turn()
         if player_choice.lower().strip() == "exit":
@@ -141,7 +144,9 @@ def play_voiceover(audio):
 
 
 def show_image(image):
-    pass
+    Image.open(image)
+    image.show()
+    image.close()
 
 
 if __name__ == "__main__":
