@@ -1,7 +1,7 @@
 venv
 env
-pycache
-/pycache
+__pycache__/
+*.pyc
 .venv
 .env
 .json
