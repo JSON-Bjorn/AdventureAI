@@ -33,7 +33,7 @@ class DiceRoller:
 
     def assess_situation(self, current_story, player_choice) -> int:
         response = self.client.run(
-            agent=self.narrator,
+            agent=self.agent,
             messages=[
                 {
                     "role": "user",
