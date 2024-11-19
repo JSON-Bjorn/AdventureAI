@@ -20,7 +20,7 @@ class TriageAgent:
         load_dotenv()
         self.author = author.agent
         self.narrator = narrator.agent
-        # self.illustrator = illustrator.agent
+        self.illustrator = illustrator  # This should be 'illustrator.agent'. Check the illustrator init method on why it isnt
         self.client = Swarm()
         self.agent = Agent(
             name="Dungeon Master",
@@ -61,8 +61,14 @@ class TriageAgent:
         self.current_image = None
         self.current_voiceover = None
         self.context_string = None
-        self._initialize_image_pipeline()
+
+    # =====Class, return and transfer methods===== #
+    @classmethod
+    async def create(cls, author, narrator, illustrator):
+        self = cls(author, narrator, illustrator)
+        await self._initialize_image_pipeline()
         self.new_player()
+        return self
 
     def _transfer_to_author(self):
         """Transfers to the author agent"""
@@ -85,6 +91,7 @@ class TriageAgent:
     def get_image(self):
         return self.current_image
 
+    # =====Gameplay methods===== #
     def new_player(self):
         # self.player_name = input("What is your name?\n > ")
         # self.player_description = input("Tell us about yourself!\n > ")
@@ -96,14 +103,14 @@ class TriageAgent:
         self.current_location = "Paris"
         self.choice = "I want to eat a baugette"
 
-    def next_story(self):
+    async def next_story(self):
         self._set_context()
         response = self._make_api_call()
-        self._generate_image()
-
-        if self._extract_response(response):
-            # return self.current_story
-            pass
+        self._extract_response(response)
+        if self.current_story:
+            await self._generate_image()
+        else:
+            print("No current story to generate image from.")
 
     def player_turn(self):
         self.choice = input(f"\nWhat does {self.player_name} do next?\n > ")
@@ -122,9 +129,10 @@ class TriageAgent:
             f"{self.player_description} was successful with their action = {self.success}"
         )
 
+    # ===== API and responses ===== #
     def _make_api_call(self) -> str:
         response = self.client.run(
-            agent=self.author,
+            agent=self.author,  # This is the bug. We are only using the autor agent in out api call
             messages=[
                 {
                     "role": "user",
@@ -161,23 +169,22 @@ class TriageAgent:
         # self.previous_story = next_story
         # return next_story
 
+    # ===== Image generation ===== #
     async def _initialize_image_pipeline(self):
         await self.illustrator.initialize()
 
     async def _generate_image(self):
-        try:
-            print("Generating image..")
-
-            image = await self.illustrator.generate_scene_image(
-                description=self.current_story, width=512, height=768
+        print("Generating image..")
+        if not self.current_story:
+            raise ValueError(
+                "No prompt(story) available for image generation"
             )
 
-            if image:
-                image.save("TEST_IMAGE.png")
-                print("Image saved")
-                self.current_image = image
-            else:
-                print("Failed to generate image.")
-        finally:
-            await self.illustrator.cleanup()
-            print("Cleanup completed")
+        image = await self.illustrator.generate_scene_image(
+            description=self.current_story, width=512, height=768
+        )
+
+        if image:
+            self.current_image = image
+        else:
+            print("Failed to generate image.")
