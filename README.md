@@ -12,22 +12,19 @@ Det var i alla fall 3.10 som gällde för att köra LLM lokkalt (?) eller var de
 - Kör adventureai.py för att starta applikationen
 
 # Current state
-Programmet är inte funktionellt.
-Vi kan generera lite story från openAI.
-Bildgenereringen funkar med test filen. Inte i main filen.
-Nästa steg är att göra allting asyncronous.
-Just nu är problemet att vi inte hinner generera bilden innan python försöker öppna den, så det borde vara en easy fix.
+Spelet funkar!
+Vi har inget sätt att rendera informationen på så bilderna öppnas direkt i windows.
+Jag hoppas att pipelinen stängs när gameloopen breakar. Om inte så är det nog inget problem. Jag testade att kommentera ut den en gång och min dator lider inte av det i alla fall.
+Spelet genererar nu text, bilder för varje prompt.
+Dice rolls tas också i hänsyn och spelar faktiskt roll nu!
 
-Steget efter det är att försöka få triage agent att kommunicera med sound agent.
-Jag lyckades inte få till intended funktionalitet:
-- Triage skickar context till Author.
-- Author svarar med ny story. So far so good!
-- Triage förmedlar nya storyn till Narrator (Här går det åt helvete)
-- Narator ger tillbaka en wav fil.
-Detta har troligtvis med att jag inte ger rätt tools till triage för att kunna skapa konversationer mellan agenterna.
-Trioligtvis behöver vi göra en metod som appendar meddelanden och returnerar chat history mellan agents.
+Bilderna sparas ingenstans. Om vi vill det så är det en enkel fix i antingen triage, illustrator eller main filen.
 
-Vi behöver också uppdatera requirements filen.
+Nästa steg är att jobba på TTS och typannoteringar.
+Sedan kommer vi till error handling.
+Förslagsvis börjar vi error hantera i illustrator klassen abra för att förstå den bättre.
+
+
 
 ## Björn update
 
