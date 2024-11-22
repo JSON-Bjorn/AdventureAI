@@ -13,6 +13,42 @@ Placeholder for triage agent instructions
                 "and hand it to the navigator agent. \n"
                 "Navigator agent will then determine the location of the story."
 """
+"""
+The triage agent class is the handler of user input and AI output by passing
+information between agent, effectively breaking down the task into smaller chunks.
+
+Agents:
+- Triage, handles all agents
+- Author, generates the next story.
+- Illustrator, generates images based on story. (Not an agent ATM)
+- Navigator, figures out where we are.
+- Dice roller, determines if an action needs to be rolled for.
+
+
+
+Flow of the game:
+Upon start:
+- Game is started and this class is instantiated.
+- Pipeline to Stable Diffusion it set up for image generation.
+- We gather user-information and store in instance variables.
+
+The game loop:
+- User information, context about the previous story, 
+  player choice and success is sent to the Author.
+- Author generates a new story based on it's input.
+  Return the new story to Triage.
+- The new story is fed to the Illustrator (currently not an agent).
+  An image is generated using Stable Diffusion and returned to Triage.
+- The new story is passed of to the Navigator who then determines where
+  we are and returns a location to Triage.
+- The user is prompted to make an action.
+- The dice roller analyzes the action and determines the difficulty on a scale
+  of 1-20 (simulating a D20 dice).
+- The user is prompted to roll (randomly generates a number).
+  If the user rolls equal or above the threshhold, their action was successful.
+- User action, success (bool), story context and user information is then
+  packaged together and the cycle continues.
+"""
 
 
 class TriageAgent:
@@ -176,9 +212,7 @@ class TriageAgent:
     async def _generate_image(self):
         print("Generating image..")
         if not self.current_story:
-            raise ValueError(
-                "No prompt(story) available for image generation"
-            )
+            raise ValueError("No prompt(story) available for image generation")
 
         image = await self.illustrator.generate_scene_image(
             description=self.current_story, width=512, height=768
