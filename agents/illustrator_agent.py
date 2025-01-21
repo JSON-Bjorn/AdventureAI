@@ -45,6 +45,16 @@ class IllustratorAgent:
         # We could make it a Swarm agent. If we don't, we still call it agent for uniformity
         self.agent = None
 
+        # Add configuration parameters for better control
+        self.default_config = {
+            "num_inference_steps": 4,
+            "guidance_scale": 2.0,
+            "negative_prompt": """text, watermark, logo, title, signature, blurry, 
+                low quality, distorted, deformed, disfigured, bad anatomy, 
+                out of frame, extra limbs, duplicate, meme, cartoon, anime""",
+            "style_preset": "epic fantasy art, detailed, cinematic, atmospheric",
+        }
+
     def log_error(
         self, message: str, error: Optional[Exception] = None
     ) -> None:
@@ -210,58 +220,85 @@ class IllustratorAgent:
     async def generate_scene_image(
         self,
         description: str,
-        style: str = "epic fantasy art, detailed, cinematic, atmospheric",
+        style: str = None,
         width: int = 512,
         height: int = 768,
+        **kwargs,
     ) -> Optional[Image.Image]:
         """Generate an image for a scene based on the description."""
         try:
-            # Clear CUDA cache before generation
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-            # Generate random seed
-            generator = torch.Generator(device=self.device).manual_seed(
-                int(torch.randint(0, 2**32 - 1, (1,)).item())
-            )
+            # Use provided style or default
+            style = style or self.default_config["style_preset"]
 
-            # Enhance the description
+            # Allow override of default config via kwargs
+            config = {**self.default_config, **kwargs}
+
+            # Enhanced prompt building
             enhanced_description = self._enhance_scene_description(
                 description
             )
-
-            # Build high-quality prompt with specific details
-            base_prompt = f"""masterpiece digital art, {enhanced_description}, {style}, 
-                epic fantasy environment, volumetric lighting, dramatic composition, 
-                detailed foreground and background elements, high detail landscape, 
-                professional photography, artstation trending, award winning"""
-
-            # Add negative prompt to avoid unwanted elements
-            negative_prompt = """text, watermark, logo, title, signature, blurry, 
-                low quality, distorted, deformed, disfigured, bad anatomy, 
-                out of frame, extra limbs, duplicate, meme, cartoon, anime"""
-
+            base_prompt = self._build_scene_prompt(
+                enhanced_description, style
+            )
             truncated_prompt = self._truncate_prompt(base_prompt)
 
-            # Balanced generation settings for quality and speed
-            with torch.inference_mode():
-                image = self.pipeline(
-                    prompt=truncated_prompt,
-                    negative_prompt=negative_prompt,
-                    width=width,
-                    height=height,
-                    num_inference_steps=4,  # Balanced speed and quality
-                    guidance_scale=2.0,  # Moderate guidance for natural results
-                    num_images_per_prompt=1,
-                    generator=generator,
-                    output_type="pil",
-                ).images[0]
-
-            return image
+            # Generate with error handling and progress callback
+            return await self._generate_with_fallback(
+                truncated_prompt, width, height, config
+            )
 
         except Exception as e:
             self.log_error("Error generating scene image", e)
             return None
+
+    async def _generate_with_fallback(self, prompt, width, height, config):
+        """Attempt generation with fallback to safer settings if needed"""
+        try:
+            # First attempt with optimal settings
+            return await self._generate_image(prompt, width, height, config)
+        except RuntimeError as e:
+            if "out of memory" in str(e):
+                # Fallback to lower memory settings
+                self.log_info("Falling back to low-memory settings...")
+                config["num_inference_steps"] = max(
+                    2, config["num_inference_steps"] - 2
+                )
+                torch.cuda.empty_cache()
+                return await self._generate_image(
+                    prompt, width, height, config
+                )
+            raise
+
+    async def _generate_image(self, prompt, width, height, config):
+        """Core image generation logic"""
+        generator = torch.Generator(device=self.device).manual_seed(
+            int(torch.randint(0, 2**32 - 1, (1,)).item())
+        )
+
+        with torch.inference_mode():
+            image = self.pipeline(
+                prompt=prompt,
+                negative_prompt=config["negative_prompt"],
+                width=width,
+                height=height,
+                num_inference_steps=config["num_inference_steps"],
+                guidance_scale=config["guidance_scale"],
+                num_images_per_prompt=1,
+                generator=generator,
+                output_type="pil",
+            ).images[0]
+
+        return image
+
+    def _build_scene_prompt(self, description: str, style: str) -> str:
+        """Build a complete prompt with all necessary elements"""
+        return f"""masterpiece digital art, {description}, {style}, 
+            epic fantasy environment, volumetric lighting, dramatic composition, 
+            detailed foreground and background elements, high detail landscape, 
+            professional photography, artstation trending, award winning"""
 
     async def generate_character_image(
         self,

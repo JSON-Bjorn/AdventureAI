@@ -1,0 +1,8 @@
+Collecting numpy
+  Using cached numpy-2.2.2-cp310-cp310-win_amd64.whl.metadata (60 kB)
+Collecting Pillow
+  Using cached pillow-11.1.0-cp310-cp310-win_amd64.whl.metadata (9.3 kB)
+Using cached numpy-2.2.2-cp310-cp310-win_amd64.whl (12.9 MB)
+Using cached pillow-11.1.0-cp310-cp310-win_amd64.whl (2.6 MB)
+Installing collected packages: Pillow, numpy
+Successfully installed Pillow-11.1.0 numpy-2.2.2
