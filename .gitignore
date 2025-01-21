@@ -11,3 +11,4 @@ zip
 .gguf
 gguf
 /models
+/src/models

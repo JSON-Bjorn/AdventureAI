@@ -33,8 +33,10 @@ from agents import (
 )
 from utils.database import Database
 from utils.dice_roller import DiceRoller
-from PIL import Image
+from utils.display_manager import DisplayManager
+import pygame
 import asyncio
+import sys
 
 
 async def instantialize_agents():
@@ -43,55 +45,100 @@ async def instantialize_agents():
     narrator = SoundAgent()
     illustrator = IllustratorAgent()
     dungeon_master = await TriageAgent.create(author, narrator, illustrator)
-    await game_loop(dice_roller, dungeon_master)
-    illustrator.cleanup()  # Cleans the pipeline when the game loop breaks
+
+    display = DisplayManager()
+
+    await game_loop(dice_roller, dungeon_master, display)
+    illustrator.cleanup()
 
 
-async def game_loop(dice_roller, dungeon_master):
+async def game_loop(dice_roller, dungeon_master, display):
     game_active = True
+    clock = pygame.time.Clock()
+
     while game_active:
         await dungeon_master.next_story()
 
-        text = dungeon_master.get_text()
-        show_text(text)
+        # Update display with new story and image
+        display.update_story(dungeon_master.get_text())
+        display.update_image(dungeon_master.get_image())
+
+        # Handle audio if implemented
         audio = dungeon_master.get_voiceover()
-        play_voiceover(audio)
-        image = dungeon_master.get_image()
-        show_image(image)
+        if audio:
+            play_voiceover(audio)
 
-        player_choice: str = dungeon_master.player_turn()
+        # Input handling loop
+        player_choice = None
+        while player_choice is None and game_active:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game_active = False
+                    break
 
-        if player_choice.lower().strip() == "exit":
-            game_active = False
-            continue
+                player_choice = display.handle_input(event)
 
-        dice_roll_needed: int = dice_roller.assess_situation(
+            display.render()
+            clock.tick(60)
+
+        if not game_active or player_choice.lower().strip() == "exit":
+            break
+
+        # Store the player's choice in the dungeon master
+        dungeon_master.player_choice = player_choice
+
+        # Handle dice rolls
+        dice_roll_needed = dice_roller.assess_situation(
             dungeon_master.current_story, player_choice
         )
 
         if dice_roll_needed:
-            show_text(f"\nTo do that, you must roll {dice_roll_needed}")
-            input("Roll dice!\n")
-            (success, player_roll) = dice_roller.roll_dice(dice_roll_needed)
-            show_text(f"You rolled a: {player_roll}!\n")
-            dungeon_master.success = success
+            # Clear and show dice roll requirement
+            roll_text = (
+                f"To do that, you must roll {dice_roll_needed}\n\n"
+                "Press any key to roll the dice!"
+            )
+            display.update_story(roll_text)
+            display.render()
 
+            # Wait for any key press to roll
+            waiting_for_roll = True
+            while waiting_for_roll:
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        waiting_for_roll = False
+                    elif event.type == pygame.QUIT:
+                        game_active = False
+                        waiting_for_roll = False
+                clock.tick(60)
 
-def show_text(text):
-    print("\n" * 20)
-    print(f"\n{text}")
+            if game_active:
+                (success, player_roll) = dice_roller.roll_dice(
+                    dice_roll_needed
+                )
+                # Clear and show roll result
+                roll_result = f"You rolled a: {player_roll}!"
+                display.update_story(roll_result)
+                display.render()
+
+                # Update dungeon master with roll result
+                dungeon_master.success = success
+
+                # Brief pause to show roll result
+                pygame.time.wait(1000)
+        else:
+            # If no roll needed, consider it a success
+            dungeon_master.success = True
 
 
 def play_voiceover(audio):
+    # Implement audio playback here if needed
     pass
 
 
-def show_image(image):
-    if image:
-        image.show()
-    else:
-        print("No image was store in the Triage class")
-
-
 if __name__ == "__main__":
-    asyncio.run(instantialize_agents())
+    try:
+        asyncio.run(instantialize_agents())
+    finally:
+        pygame.quit()
+        sys.exit()

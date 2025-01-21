@@ -1,4 +1,5 @@
 # Core ML Framework dependencies
 numpy>=2.1.3
 Pillow>=10.0.0
-xformers>=0.0.20  # Optional but recommended for better performance 
+xformers>=0.0.20  # Optional but recommended for better performance
+pygame>=2.5.0  # Added for GUI support 
