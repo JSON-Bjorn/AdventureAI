@@ -13,7 +13,6 @@ class IllustratorAgent:
     def __init__(self):
         super().__init__()
         load_dotenv()
-        # Use a local model path from environment variables
         self.models_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "models",
@@ -24,22 +23,29 @@ class IllustratorAgent:
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
-        # GPU diagnostics
+        # Configure CUDA settings
+        torch.backends.cuda.matmul.allow_tf32 = (
+            True  # Better performance on RTX 30 series
+        )
+        torch.backends.cudnn.allow_tf32 = True
+
+        # GPU diagnostics with more detail
         print("\nGPU Diagnostics:")
-        print(f"CUDA available: {torch.cuda.is_available()}")
         if torch.cuda.is_available():
+            print(f"CUDA available: {torch.cuda.is_available()}")
             print(f"CUDA version: {torch.version.cuda}")
             print(f"GPU device: {torch.cuda.get_device_name(0)}")
             print(
                 f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB"
             )
+            self.device = "cuda"
         else:
-            print("No CUDA GPU detected. Please ensure you have:")
-            print("1. A CUDA-capable GPU")
-            print("2. NVIDIA drivers installed")
-            print("3. PyTorch installed with CUDA support")
-
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            print("No CUDA GPU detected. Please check:")
+            print("1. NVIDIA drivers are up to date")
+            print("2. PyTorch is installed with CUDA support")
+            print("3. CUDA toolkit is installed")
+            self.device = "cpu"
+            raise RuntimeError("CUDA GPU required for image generation")
 
         # This should be a reference to where we give the image prompts.
         # We could make it a Swarm agent. If we don't, we still call it agent for uniformity
@@ -76,55 +82,34 @@ class IllustratorAgent:
 
             model_path = os.path.join(self.models_dir, self.model_file)
             if not os.path.exists(model_path):
-                print(
-                    f"Error: JuggernautXL Lightning model not found at {model_path}"
-                )
+                print(f"Error: Model not found at {model_path}")
                 print(
                     f"Please ensure the model file '{self.model_file}' is in the models directory"
                 )
                 raise FileNotFoundError(f"Model not found at {model_path}")
 
-            print(f"Loading JuggernautXL Lightning from: {model_path}")
+            print(f"Loading model from: {model_path}")
 
-            # Load the pipeline with optimized settings for Windows without Triton
+            # Load pipeline with CUDA optimizations
             self.pipeline = StableDiffusionXLPipeline.from_single_file(
                 model_path,
-                torch_dtype=torch.float16
-                if self.device == "cuda"
-                else torch.float32,
+                torch_dtype=torch.float16,  # Use half precision for VRAM efficiency
                 use_safetensors=True,
                 variant="fp16",
-            )
-            self.pipeline.to(self.device)
+            ).to(self.device)
 
-            # Enable memory-efficient optimizations
-            if self.device == "cuda":
-                self.pipeline.enable_attention_slicing(
-                    "max"
-                )  # Maximum memory efficiency
-                self.pipeline.enable_vae_tiling()  # Enable VAE tiling
-                self.pipeline.enable_model_cpu_offload()  # Offload unused models to CPU
+            # Enable memory efficient settings
+            self.pipeline.enable_attention_slicing()
+            self.pipeline.enable_vae_tiling()
 
-                # Use xformers if available
-                try:
-                    import xformers
+            # Enable xformers for better performance if available
+            try:
+                self.pipeline.enable_xformers_memory_efficient_attention()
+                print("Enabled xformers memory efficient attention")
+            except Exception as e:
+                print(f"Xformers not available: {e}")
 
-                    self.pipeline.enable_xformers_memory_efficient_attention()
-                    print("Enabled xformers memory efficient attention")
-                except ImportError:
-                    print("xformers not available, using default attention")
-
-                # Use DPM++ 2M scheduler for fast inference
-                self.pipeline.scheduler = (
-                    DPMSolverMultistepScheduler.from_config(
-                        self.pipeline.scheduler.config,
-                        algorithm_type="dpmsolver++",
-                        solver_order=2,
-                    )
-                )
-
-            print("JuggernautXL Lightning pipeline initialized successfully!")
-            self.log_info("Initialized JuggernautXL Lightning generator")
+            print("Pipeline initialized successfully on GPU!")
 
         except Exception as e:
             self.log_error("Failed to initialize image generator", e)

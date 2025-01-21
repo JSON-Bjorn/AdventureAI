@@ -56,8 +56,10 @@ class TriageAgent:
         load_dotenv()
         self.author = author.agent
         self.narrator = narrator.agent
-        self.illustrator = illustrator  # This should be 'illustrator.agent'. Check the illustrator init method on why it isnt
-        self.client = Swarm()
+        self.illustrator = illustrator
+        self.client = (
+            Swarm()
+        )  # Swarm automatically uses OPENAI_API_KEY from env
         self.agent = Agent(
             name="Dungeon Master",
             model="gpt-4o-mini",
@@ -212,7 +214,9 @@ class TriageAgent:
     async def _generate_image(self):
         print("Generating image..")
         if not self.current_story:
-            raise ValueError("No prompt(story) available for image generation")
+            raise ValueError(
+                "No prompt(story) available for image generation"
+            )
 
         image = await self.illustrator.generate_scene_image(
             description=self.current_story, width=512, height=768

@@ -53,6 +53,37 @@ if not exist "venv" (
 echo Activating virtual environment...
 call venv\Scripts\activate.bat
 
+:: Verify activation worked
+echo Checking if venv is activated...
+python -c "import sys; print('Venv activated:', 'venv' in sys.prefix)" | findstr "True" >nul
+if errorlevel 1 (
+    echo Error: Virtual environment activation failed!
+    echo Trying alternative activation method...
+    
+    :: Try alternative activation methods
+    if exist "venv\Scripts\activate" (
+        call venv\Scripts\activate
+    ) else if exist "venv\bin\activate" (
+        call venv\bin\activate
+    ) else (
+        echo Error: Could not find activation script!
+        pause
+        exit /b 1
+    )
+    
+    :: Verify again
+    python -c "import sys; print('Venv activated:', 'venv' in sys.prefix)" | findstr "True" >nul
+    if errorlevel 1 (
+        echo Error: Virtual environment activation failed after retry.
+        echo Please activate the virtual environment manually:
+        echo     venv\Scripts\activate
+        pause
+        exit /b 1
+    )
+)
+
+echo Virtual environment activated successfully!
+
 :: Verify Python version in venv
 python --version | findstr /r "3\.10\." >nul
 if errorlevel 1 (
@@ -67,6 +98,9 @@ if not exist "venv\Scripts\pip.exe" (
     echo Installing pip tools...
     python -m pip install --upgrade pip
     
+    echo Installing PyTorch with CUDA support...
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+    
     echo Installing core requirements...
     pip install -r src\requirements\requirements-core.txt
     
@@ -75,6 +109,15 @@ if not exist "venv\Scripts\pip.exe" (
 ) else (
     :: Verify dependencies are installed correctly
     echo Checking installed dependencies...
+    
+    :: Check if PyTorch is installed with CUDA
+    python -c "import torch; print('CUDA available:', torch.cuda.is_available())" | findstr "True" >nul
+    if errorlevel 1 (
+        echo Reinstalling PyTorch with CUDA support...
+        pip uninstall torch torchvision torchaudio -y
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+    )
+    
     pip freeze > temp_requirements.txt
     findstr /V /C:"pkg-resources==0.0.0" temp_requirements.txt > cleaned_requirements.txt
     set MISSING_DEPS=0

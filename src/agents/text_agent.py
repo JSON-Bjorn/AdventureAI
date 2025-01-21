@@ -6,7 +6,7 @@ import os
 class TextAgent:
     def __init__(self):
         load_dotenv()
-        self.client = Swarm(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = Swarm()
         self.agent = Agent(
             name="The Author",
             model="gpt-4",
