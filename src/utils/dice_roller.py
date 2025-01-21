@@ -1,7 +1,4 @@
 from swarm import Swarm, Agent
-import openai
-import os
-import json
 from dotenv import load_dotenv
 from random import randint
 
@@ -10,10 +7,12 @@ load_dotenv()
 
 class DiceRoller:
     def __init__(self):
-        self.client = Swarm()
+        self.client = (
+            Swarm()
+        )  # Swarm will automatically use OPENAI_API_KEY from env
         self.agent = Agent(
             name="Dice master funk flex 3000",
-            model="gpt-4o-mini",
+            model="gpt-4",
             instructions=(
                 "You are a master of determining the difficulty of tasks set"
                 "in a dungeons and dragons type-video game."

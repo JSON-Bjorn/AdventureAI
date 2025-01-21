@@ -1,14 +1,15 @@
 from swarm import Swarm, Agent
 from dotenv import load_dotenv
+import os
 
 
 class TextAgent:
     def __init__(self):
         load_dotenv()
-        self.client = Swarm()
+        self.client = Swarm(api_key=os.getenv("OPENAI_API_KEY"))
         self.agent = Agent(
             name="The Author",
-            model="gpt-4o-mini",
+            model="gpt-4",
             instructions="""
 You are an interactive storyteller for a video game.
 Your role is to generate dynamic, atmospheric narratives that adapt to player actions and game conditions. 
