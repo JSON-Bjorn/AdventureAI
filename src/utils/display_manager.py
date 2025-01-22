@@ -3,10 +3,11 @@ import textwrap
 from PIL import Image
 import io
 import numpy as np
+import os
 
 
 class DisplayManager:
-    def __init__(self, width=1024, height=768):
+    def __init__(self, width=1600, height=960):
         # Initialize pygame and its modules
         pygame.init()
         pygame.font.init()
@@ -21,7 +22,8 @@ class DisplayManager:
 
         self.width = width
         self.height = height
-        self.screen = pygame.display.set_mode((width, height))
+        os.environ["SDL_VIDEO_WINDOW_POS"] = "0,0"
+        self.screen = pygame.display.set_mode((width, height), pygame.SHOWN)
         pygame.display.set_caption("AdventureAI")
 
         # Colors
@@ -33,24 +35,42 @@ class DisplayManager:
         self.story_font = pygame.font.SysFont("Arial", 24)
         self.input_font = pygame.font.SysFont("Arial", 20)
 
-        # Text input
-        self.input_text = ""
-        self.input_rect = pygame.Rect(10, height - 40, width - 20, 30)
+        # Fixed dimensions
+        self.text_width = 768  # Width for text area
+        self.image_size = 768  # Size for square image
 
-        # Calculate dimensions for square image display
-        image_size = height - 60  # Square image height/width
+        # Calculate remaining height for input
+        remaining_height = height - self.image_size - 30  # 30px for margins
 
-        # Story display area (adjust to fill remaining width)
-        story_width = width - image_size - 30  # 30 for padding
-        self.story_rect = pygame.Rect(10, 10, story_width, height - 60)
+        # Story display area (same height as image)
+        self.story_rect = pygame.Rect(
+            10,  # x position
+            10,  # y position
+            self.text_width,  # Fixed width for text
+            self.image_size,  # Same height as image
+        )
+
+        # Input field (uses remaining height)
+        self.input_rect = pygame.Rect(
+            10,  # x position
+            self.image_size
+            + 20,  # Position below story area with 10px margin
+            self.text_width,  # Same width as story area
+            remaining_height,  # Use all remaining height
+        )
 
         # Image display area (fixed to 768x768)
         self.image_rect = pygame.Rect(
-            width - image_size - 10,  # 10px padding from right
-            10,  # 10px padding from top
-            image_size,  # Square width
-            image_size,  # Square height
+            self.text_width + 30,  # Position after text area plus margin
+            10,  # 10px from top
+            self.image_size,  # Exact image width
+            self.image_size,  # Exact image height
         )
+
+        # Text input state
+        self.input_text = ""
+        self.input_lines = [""]  # Track multiple lines
+        self.input_scroll = 0  # Scroll position
 
         self.current_story = ""
         self.current_image = None
@@ -89,41 +109,65 @@ class DisplayManager:
         # Draw story area background
         pygame.draw.rect(self.screen, self.GRAY, self.story_rect, 2)
 
-        # Calculate max characters per line based on font size and story rect width
-        font_width = self.story_font.size("A")[
-            0
-        ]  # Get average character width
-        chars_per_line = (
-            self.story_rect.width - 20
-        ) // font_width  # -20 for padding
+        # Render story text with proper margins and wrapping
+        story_width = self.story_rect.width - 20  # 10px margins on each side
+        wrapped_lines = []
+        words = self.current_story.split()
+        current_line = []
+        current_width = 0
 
-        # Render story text with improved word wrap
-        wrapped_text = textwrap.fill(self.current_story, width=chars_per_line)
-        y_offset = self.story_rect.top + 10
+        for word in words:
+            word_surface = self.story_font.render(
+                word + " ", True, self.WHITE
+            )
+            word_width = word_surface.get_width()
 
-        # Handle text scrolling if it exceeds the box height
-        lines = wrapped_text.split("\n")
-        visible_lines = (
-            self.story_rect.height - 20
-        ) // self.story_font.get_height()
-        lines = lines[-visible_lines:]  # Only show last N lines that fit
+            if current_width + word_width > story_width:
+                wrapped_lines.append(" ".join(current_line))
+                current_line = [word]
+                current_width = word_width
+            else:
+                current_line.append(word)
+                current_width += word_width
 
-        for line in lines:
-            text_surface = self.story_font.render(line, True, self.WHITE)
-            # Ensure text stays within bounds
+        if current_line:
+            wrapped_lines.append(" ".join(current_line))
+
+        # Render story text
+        y = self.story_rect.top + 10
+        for line in wrapped_lines:
             if (
-                y_offset + self.story_font.get_height()
+                y + self.story_font.get_height()
                 <= self.story_rect.bottom - 10
             ):
-                self.screen.blit(
-                    text_surface, (self.story_rect.left + 10, y_offset)
-                )
-                y_offset += self.story_font.get_height()
+                text_surface = self.story_font.render(line, True, self.WHITE)
+                self.screen.blit(text_surface, (self.story_rect.left + 10, y))
+                y += self.story_font.get_height()
 
-        # Draw image area
+        # Draw input area
+        pygame.draw.rect(self.screen, self.GRAY, self.input_rect, 2)
+
+        # Render input text with wrapping and scrolling
+        visible_lines = min(6, len(self.input_lines) - self.input_scroll)
+        for i in range(visible_lines):
+            line_idx = i + self.input_scroll
+            if line_idx < len(self.input_lines):
+                text_surface = self.input_font.render(
+                    self.input_lines[line_idx], True, self.WHITE
+                )
+                self.screen.blit(
+                    text_surface,
+                    (
+                        self.input_rect.x + 10,
+                        self.input_rect.y
+                        + 5
+                        + (i * self.input_font.get_height()),
+                    ),
+                )
+
+        # Draw image area and image
         pygame.draw.rect(self.screen, self.GRAY, self.image_rect, 2)
         if self.current_image:
-            # Center the image in the image rect
             image_x = (
                 self.image_rect.centerx - self.current_image.get_width() // 2
             )
@@ -132,26 +176,45 @@ class DisplayManager:
             )
             self.screen.blit(self.current_image, (image_x, image_y))
 
-        # Draw input area
-        pygame.draw.rect(self.screen, self.WHITE, self.input_rect, 2)
-        text_surface = self.input_font.render(
-            self.input_text, True, self.WHITE
-        )
-        self.screen.blit(
-            text_surface, (self.input_rect.x + 5, self.input_rect.y + 5)
-        )
-
         pygame.display.flip()
 
     def handle_input(self, event):
-        """Handle text input events"""
+        """Handle text input events with multi-line support"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
-                input_value = self.input_text
-                self.input_text = ""
+                # Join all lines and return the complete input
+                input_value = "\n".join(self.input_lines)
+                self.input_lines = [""]
+                self.input_scroll = 0
                 return input_value
+
             elif event.key == pygame.K_BACKSPACE:
-                self.input_text = self.input_text[:-1]
+                if self.input_lines[-1]:
+                    self.input_lines[-1] = self.input_lines[-1][:-1]
+                elif len(self.input_lines) > 1:
+                    self.input_lines.pop()
+                    self.input_scroll = max(0, len(self.input_lines) - 3)
+
+            elif event.key == pygame.K_UP and self.input_scroll > 0:
+                self.input_scroll -= 1
+
+            elif (
+                event.key == pygame.K_DOWN
+                and self.input_scroll < len(self.input_lines) - 3
+            ):
+                self.input_scroll += 1
+
             else:
-                self.input_text += event.unicode
+                # Add character to current line
+                current_line = self.input_lines[-1] + event.unicode
+                if (
+                    self.input_font.size(current_line)[0]
+                    > self.input_rect.width - 20
+                ):
+                    self.input_lines.append(event.unicode)
+                    if len(self.input_lines) > 3:
+                        self.input_scroll = len(self.input_lines) - 3
+                else:
+                    self.input_lines[-1] += event.unicode
+
         return None

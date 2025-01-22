@@ -216,39 +216,26 @@ class TriageAgent:
                 name="Scene Summarizer",
                 model="gpt-3.5-turbo",
                 instructions="""
-                You are a prompt engineer for AI image generation. Create precise, structured prompts
-                following these rules:
-
-                Core Components (in order):
-                1. Subject: Main focus (person, creature, object)
-                2. Action/State: What they're doing
-                3. Environment: The setting or background
-                4. Key Details: Important visual elements
-                5. Style/Quality Tags: End with these
+                Create extremely concise image generation prompts that fit within CLIP's 77 token limit.
 
                 Rules:
-                - Keep total length under 40 words
-                - Start with the most important element
-                - Use clear, specific descriptions
-                - Add weights to important elements using (element:1.2) format
-                - End with "high resolution image, cinematic lighting"
+                1. Maximum 30 words total
+                2. Focus on the main subject and one key action/state
+                3. Add only the most important setting details
+                4. End with only "high resolution image, cinematic lighting"
+                5. Use weights sparingly - maximum two (subject:1.2) tags
                 
-                Example input:
-                "Keeping your nerves steady and your eyes sharp, you inspected the monument carefully, 
-                your hands brushing over its cold, age-worn surface. The fear of what might linger in 
-                the darkness steeled your resolve. Your fingers grazed over an ornate carving, veiled 
-                by the night's embrace. The stone groaned, and suddenly a panel slid back, revealing 
-                an arsenal of ancient weapons."
+                Example good (under token limit):
+                "(Explorer:1.2) examining ancient stone monument, (ornate carvings:1.1), moonlit ruins, high resolution image, cinematic lighting"
                 
-                Example output:
-                "(Explorer:1.2) examining ancient stone monument with (ornate carvings:1.1), hidden weapon chamber revealed, 
-                moonlit ruins, dramatic shadows, high resolution image, cinematic lighting"
+                Example bad (too long):
+                "(Explorer:1.2) uncovering tarnished silver locket with (Lady's picture:1.1), moonlit jungle path revealed, eerie palm shadows, glimmering object in sand, volumetric lighting, dramatic composition, high resolution image, cinematic lighting"
                 """,
             ),
             messages=[
                 {
                     "role": "user",
-                    "content": f"Create an image generation prompt for this scene:\n{context}",
+                    "content": f"Create a concise image prompt (max 30 words) for this scene:\n{context}",
                 }
             ],
         )
