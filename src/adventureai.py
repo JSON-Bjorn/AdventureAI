@@ -37,19 +37,38 @@ from utils.display_manager import DisplayManager
 import pygame
 import asyncio
 import sys
+import traceback
 
 
 async def instantialize_agents():
-    dice_roller = DiceRoller()
-    author = TextAgent()
-    narrator = SoundAgent()
-    illustrator = IllustratorAgent()
-    dungeon_master = await TriageAgent.create(author, narrator, illustrator)
+    try:
+        print("Initializing agents...")
+        dice_roller = DiceRoller()
+        author = TextAgent()
+        narrator = SoundAgent()
+        illustrator = IllustratorAgent()
 
-    display = DisplayManager()
+        print("Creating dungeon master...")
+        dungeon_master = await TriageAgent.create(
+            author, narrator, illustrator
+        )
 
-    await game_loop(dice_roller, dungeon_master, display)
-    illustrator.cleanup()
+        print("Initializing display...")
+        display = DisplayManager()
+
+        print("Starting game loop...")
+        await game_loop(dice_roller, dungeon_master, display)
+
+    except Exception as e:
+        print("\nError during initialization:")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        print("\nFull traceback:")
+        traceback.print_exc()
+
+    finally:
+        if "illustrator" in locals():
+            illustrator.cleanup()
 
 
 async def game_loop(dice_roller, dungeon_master, display):
@@ -63,10 +82,10 @@ async def game_loop(dice_roller, dungeon_master, display):
         display.update_story(dungeon_master.get_text())
         display.update_image(dungeon_master.get_image())
 
-        # Handle audio if implemented
-        audio = dungeon_master.get_voiceover()
-        if audio:
-            play_voiceover(audio)
+        # Play voiceover for new story
+        voiceover = dungeon_master.get_voiceover()
+        if voiceover:
+            voiceover.play_audio()
 
         # Input handling loop
         player_choice = None
@@ -138,7 +157,30 @@ def play_voiceover(audio):
 
 if __name__ == "__main__":
     try:
+        # Set up asyncio event loop policy for Windows
+        if sys.platform == "win32":
+            asyncio.set_event_loop_policy(
+                asyncio.WindowsSelectorEventLoopPolicy()
+            )
+
+        print("Starting AdventureAI...")
         asyncio.run(instantialize_agents())
+
+    except Exception as e:
+        print("\nCritical error:")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        print("\nFull traceback:")
+        traceback.print_exc()
+
     finally:
+        print("\nCleaning up...")
+        if "illustrator" in locals():
+            asyncio.run(illustrator.cleanup())  # Make cleanup async
         pygame.quit()
+
+        # Keep window open if there was an error
+        if sys.exc_info()[0] is not None:
+            input("\nPress Enter to exit...")
+
         sys.exit()

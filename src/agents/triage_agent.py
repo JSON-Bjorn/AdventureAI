@@ -54,8 +54,8 @@ The game loop:
 class TriageAgent:
     def __init__(self, author, narrator, illustrator):
         load_dotenv()
-        self.author = author.agent
-        self.narrator = narrator.agent
+        self.author = author.agent  # TextAgent still uses Swarm
+        self.narrator = narrator  # SoundAgent now used directly
         self.illustrator = illustrator
         self.client = Swarm()
         self.agent = Agent(
@@ -159,6 +159,10 @@ class TriageAgent:
                 }
             )
         self.current_story = new_story
+
+        # Generate audio for the new story
+        await self.narrator.generate_speech(new_story)
+        self.current_voiceover = self.narrator
 
         # Generate image for new story
         await self._generate_image()

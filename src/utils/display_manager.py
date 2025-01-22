@@ -7,8 +7,17 @@ import numpy as np
 
 class DisplayManager:
     def __init__(self, width=1024, height=768):
+        # Initialize pygame and its modules
         pygame.init()
         pygame.font.init()
+
+        # Initialize mixer with specific settings for better compatibility
+        pygame.mixer.init(
+            frequency=44100,  # Standard frequency
+            size=-16,  # 16-bit audio
+            channels=2,  # Stereo
+            buffer=2048,  # Buffer size
+        )
 
         self.width = width
         self.height = height
