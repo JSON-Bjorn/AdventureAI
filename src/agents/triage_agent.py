@@ -178,11 +178,66 @@ class TriageAgent:
                 "No prompt(story) available for image generation"
             )
 
+        # Create a summarized scene description for image generation
+        scene_summary = self._summarize_scene_for_image()
+
         image = await self.illustrator.generate_scene_image(
-            description=self.current_story, width=512, height=768
+            description=scene_summary, width=512, height=768
         )
 
         if image:
             self.current_image = image
         else:
             print("Failed to generate image.")
+
+    def _summarize_scene_for_image(self) -> str:
+        """
+        Summarize the current story context into a concise scene description
+        for image generation, focusing on visual elements.
+        """
+        # Get scene context from story history if available
+        context = ""
+        if self.story_history:
+            last_story = self.story_history[-1]["story"]
+            context = f"{last_story}\n"
+
+        # Add current story
+        if self.current_story:
+            context += self.current_story
+
+        # Use GPT to create a visual summary
+        response = self.client.run(
+            agent=Agent(
+                name="Scene Summarizer",
+                model="gpt-3.5-turbo",
+                instructions="""
+                You are a scene description summarizer for image generation.
+                Your task is to extract the key visual elements from a story text
+                and create a clear, concise description focusing only on the 
+                visible aspects of the scene. Keep the summary under 100 words.
+                
+                Focus on:
+                - Physical environment and setting
+                - Time of day and weather
+                - Key characters present
+                - Notable objects or items
+                - Overall atmosphere and lighting
+                
+                Ignore:
+                - Dialog
+                - Character thoughts
+                - Past or future events
+                - Non-visual story elements
+                """,
+            ),
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Summarize this scene for image generation:\n{context}",
+                }
+            ],
+        )
+
+        summary = response.messages[0]["content"]
+        print(f"Scene summary for image: {summary}")
+        return summary
