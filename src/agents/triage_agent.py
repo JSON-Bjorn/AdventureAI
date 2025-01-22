@@ -212,28 +212,30 @@ class TriageAgent:
                 model="gpt-3.5-turbo",
                 instructions="""
                 You are a scene description summarizer for image generation.
-                Your task is to extract the key visual elements from a story text
-                and create a clear, concise description focusing only on the 
-                visible aspects of the scene. Keep the summary under 100 words.
+                Create extremely concise, clear descriptions focusing only on the main visual elements.
                 
-                Focus on:
-                - Physical environment and setting
-                - Time of day and weather
-                - Key characters present
-                - Notable objects or items
-                - Overall atmosphere and lighting
+                Rules:
+                - Use 25 words or less
+                - Focus on the main action or scene state
+                - Include only what would be visible in a single snapshot
+                - Remove all atmospheric language and flowery descriptions
+                - Start with the subject, then the action/state, then the setting
                 
-                Ignore:
-                - Dialog
-                - Character thoughts
-                - Past or future events
-                - Non-visual story elements
+                Example input:
+                "Keeping your nerves steady and your eyes sharp, you inspected the monument carefully, 
+                your hands brushing over its cold, age-worn surface. The fear of what might linger in 
+                the darkness steeled your resolve. Your fingers grazed over an ornate carving, veiled 
+                by the night's embrace. The stone groaned, and suddenly a panel slid back, revealing 
+                an arsenal of ancient weapons."
+                
+                Example output:
+                "Person closely inspecting an old monument that hides ancient weaponry"
                 """,
             ),
             messages=[
                 {
                     "role": "user",
-                    "content": f"Summarize this scene for image generation:\n{context}",
+                    "content": f"Create a concise visual description for this scene:\n{context}",
                 }
             ],
         )
