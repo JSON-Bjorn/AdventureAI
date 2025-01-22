@@ -52,7 +52,7 @@ The game loop:
 
 
 class TriageAgent:
-    def __init__(self, author, narrator, illustrator):
+    def __init__(self, author, narrator, illustrator, mood_analyzer):
         load_dotenv()
         self.author = author.agent  # TextAgent still uses Swarm
         self.narrator = narrator  # SoundAgent now used directly
@@ -92,11 +92,12 @@ class TriageAgent:
         self.success = None
         self.current_image = None
         self.current_voiceover = None
+        self.mood_analyzer = mood_analyzer
 
     # =====Class, return and transfer methods===== #
     @classmethod
-    async def create(cls, author, narrator, illustrator):
-        self = cls(author, narrator, illustrator)
+    async def create(cls, author, narrator, illustrator, mood_analyzer):
+        self = cls(author, narrator, illustrator, mood_analyzer)
         await self._initialize_image_pipeline()
         return self
 
@@ -159,6 +160,10 @@ class TriageAgent:
                 }
             )
         self.current_story = new_story
+
+        # Analyze scene intensity and mood, then update music
+        intensity, mood = self.mood_analyzer.analyze_scene(new_story)
+        self.narrator.play_background_music(intensity=intensity, mood=mood)
 
         # Generate audio for the new story
         await self.narrator.generate_speech(new_story)

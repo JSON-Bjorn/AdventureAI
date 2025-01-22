@@ -30,6 +30,7 @@ from agents import (
     SoundAgent,
     IllustratorAgent,
     TriageAgent,
+    MoodAnalyzer,
 )
 from utils.database import Database
 from utils.dice_roller import DiceRoller
@@ -47,10 +48,11 @@ async def instantialize_agents():
         author = TextAgent()
         narrator = SoundAgent()
         illustrator = IllustratorAgent()
+        mood_analyzer = MoodAnalyzer()
 
         print("Creating dungeon master...")
         dungeon_master = await TriageAgent.create(
-            author, narrator, illustrator
+            author, narrator, illustrator, mood_analyzer
         )
 
         print("Initializing display...")
@@ -175,8 +177,8 @@ if __name__ == "__main__":
 
     finally:
         print("\nCleaning up...")
-        if "illustrator" in locals():
-            asyncio.run(illustrator.cleanup())  # Make cleanup async
+        if "narrator" in locals():
+            narrator.stop_background_music()
         pygame.quit()
 
         # Keep window open if there was an error
