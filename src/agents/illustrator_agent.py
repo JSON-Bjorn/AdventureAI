@@ -12,12 +12,18 @@ class IllustratorAgent:
 
     def __init__(self):
         super().__init__()
-        load_dotenv()
+        # Force reload environment variables
+        load_dotenv(override=True)
+
         self.models_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "models",
         )
-        self.model_file = os.getenv("IMAGE_MODEL") + ".safetensors"
+        # Add debug print to verify the model name
+        model_name = os.getenv("IMAGE_MODEL")
+        print(f"Loading model: {model_name}")
+
+        self.model_file = model_name + ".safetensors"
         self.pipeline = None
         self.max_tokens = 77  # CLIP token limit
         logging.basicConfig(level=logging.INFO)

@@ -28,17 +28,19 @@ class DisplayManager:
         self.input_text = ""
         self.input_rect = pygame.Rect(10, height - 40, width - 20, 30)
 
-        # Calculate dimensions to match 512x768 aspect ratio for image
-        image_height = height - 60  # Total available height
-        image_width = int(image_height * (512 / 768))  # Maintain aspect ratio
+        # Calculate dimensions for square image display
+        image_size = height - 60  # Square image height/width
 
         # Story display area (adjust to fill remaining width)
-        story_width = width - image_width - 30  # 30 for padding
+        story_width = width - image_size - 30  # 30 for padding
         self.story_rect = pygame.Rect(10, 10, story_width, height - 60)
 
-        # Image display area (fixed to match SD output aspect ratio)
+        # Image display area (fixed to 768x768)
         self.image_rect = pygame.Rect(
-            width - image_width - 10, 10, image_width, image_height
+            width - image_size - 10,  # 10px padding from right
+            10,  # 10px padding from top
+            image_size,  # Square width
+            image_size,  # Square height
         )
 
         self.current_story = ""
@@ -49,12 +51,11 @@ class DisplayManager:
         if pil_image.mode != "RGB":
             pil_image = pil_image.convert("RGB")
 
-        # Resize image to exactly match our display area
-        new_width = self.image_rect.width
-        new_height = self.image_rect.height
+        # Resize image to exactly match our square display area
+        new_size = self.image_rect.width  # Square size
 
         pil_image = pil_image.resize(
-            (new_width, new_height), Image.Resampling.LANCZOS
+            (new_size, new_size), Image.Resampling.LANCZOS
         )
 
         image_data = pil_image.tobytes()

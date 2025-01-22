@@ -182,7 +182,9 @@ class TriageAgent:
         scene_summary = self._summarize_scene_for_image()
 
         image = await self.illustrator.generate_scene_image(
-            description=scene_summary, width=512, height=768
+            description=scene_summary,
+            width=768,  # Changed from 512
+            height=768,  # Changed from 768
         )
 
         if image:
@@ -192,8 +194,7 @@ class TriageAgent:
 
     def _summarize_scene_for_image(self) -> str:
         """
-        Summarize the current story context into a concise scene description
-        for image generation, focusing on visual elements.
+        Create an optimized image generation prompt following Juggernaut's guidelines.
         """
         # Get scene context from story history if available
         context = ""
@@ -211,15 +212,22 @@ class TriageAgent:
                 name="Scene Summarizer",
                 model="gpt-3.5-turbo",
                 instructions="""
-                You are a scene description summarizer for image generation.
-                Create extremely concise, clear descriptions focusing only on the main visual elements.
-                
+                You are a prompt engineer for AI image generation. Create precise, structured prompts
+                following these rules:
+
+                Core Components (in order):
+                1. Subject: Main focus (person, creature, object)
+                2. Action/State: What they're doing
+                3. Environment: The setting or background
+                4. Key Details: Important visual elements
+                5. Style/Quality Tags: End with these
+
                 Rules:
-                - Use 25 words or less
-                - Focus on the main action or scene state
-                - Include only what would be visible in a single snapshot
-                - Remove all atmospheric language and flowery descriptions
-                - Start with the subject, then the action/state, then the setting
+                - Keep total length under 40 words
+                - Start with the most important element
+                - Use clear, specific descriptions
+                - Add weights to important elements using (element:1.2) format
+                - End with "high resolution image, cinematic lighting"
                 
                 Example input:
                 "Keeping your nerves steady and your eyes sharp, you inspected the monument carefully, 
@@ -229,17 +237,18 @@ class TriageAgent:
                 an arsenal of ancient weapons."
                 
                 Example output:
-                "Person closely inspecting an old monument that hides ancient weaponry"
+                "(Explorer:1.2) examining ancient stone monument with (ornate carvings:1.1), hidden weapon chamber revealed, 
+                moonlit ruins, dramatic shadows, high resolution image, cinematic lighting"
                 """,
             ),
             messages=[
                 {
                     "role": "user",
-                    "content": f"Create a concise visual description for this scene:\n{context}",
+                    "content": f"Create an image generation prompt for this scene:\n{context}",
                 }
             ],
         )
 
         summary = response.messages[0]["content"]
-        print(f"Scene summary for image: {summary}")
+        print(f"Generated image prompt: {summary}")
         return summary
