@@ -19,6 +19,7 @@ Key requirements:
 2. React to player choices with concrete consequences
 3. Describe specific locations and situations, not vague possibilities
 4. Always present a clear current situation, not just setup
+5. Return ONLY the story text, no meta commentary or explanations
 
 If player_choice_successful is True:
 - Show positive outcomes of their action
@@ -36,5 +37,5 @@ Example good response:
 Example bad response (too vague/static):
 "You stand at the threshold of adventure. Many paths lie before you, each promising its own mysteries. The journey awaits!"
 
-Always ensure your response creates immediate situations requiring player action.""",
+Remember: Return ONLY the story text. No explanations, no meta text, no instructions.""",
         )
