@@ -3,6 +3,7 @@ import sys
 import asyncio
 from swarm import Swarm, Agent
 from dotenv import load_dotenv
+from src.utils.prompt_generator import PromptGenerator
 
 # Add project root to Python path
 project_root = os.path.dirname(
@@ -107,6 +108,7 @@ class TriageAgent:
         # Initialize with default mood and intensity
         self.current_intensity = 1
         self.current_mood = "adventerous"
+        self.prompt_generator = PromptGenerator()
 
     # =====Class, return and transfer methods===== #
     @classmethod
@@ -220,68 +222,27 @@ class TriageAgent:
     async def _generate_image(self):
         print("Generating image..")
         if not self.current_story:
-            raise ValueError(
-                "No prompt(story) available for image generation"
-            )
+            raise ValueError("No story available for image generation")
 
-        # Create a summarized scene description for image generation
-        scene_summary = self._summarize_scene_for_image()
+        # Get previous story if available
+        previous_story = (
+            self.story_history[-1]["story"] if self.story_history else None
+        )
+
+        # Generate optimized prompt
+        scene_prompt = self.prompt_generator.create_prompt(
+            self.current_story, previous_story
+        )
+
+        print(f"Generated image prompt: {scene_prompt}")
 
         image = await self.illustrator.generate_scene_image(
-            description=scene_summary,
-            width=768,  # Changed from 512
-            height=768,  # Changed from 768
+            description=scene_prompt,
+            width=768,
+            height=768,
         )
 
         if image:
             self.current_image = image
         else:
             print("Failed to generate image.")
-
-    def _summarize_scene_for_image(self) -> str:
-        """
-        Create an optimized image generation prompt following Juggernaut's guidelines.
-        """
-        # Get scene context from story history if available
-        context = ""
-        if self.story_history:
-            last_story = self.story_history[-1]["story"]
-            context = f"{last_story}\n"
-
-        # Add current story
-        if self.current_story:
-            context += self.current_story
-
-        # Use GPT to create a visual summary
-        response = self.client.run(
-            agent=Agent(
-                name="Scene Summarizer",
-                model="gpt-3.5-turbo",
-                instructions="""
-                Create extremely concise image generation prompts that fit within CLIP's 77 token limit.
-
-                Rules:
-                1. Maximum 30 words total
-                2. Focus on the main subject and one key action/state
-                3. Add only the most important setting details
-                4. End with only "high resolution image, cinematic lighting"
-                5. Use weights sparingly - maximum two (subject:1.2) tags
-                
-                Example good (under token limit):
-                "(Explorer:1.2) examining ancient stone monument, (ornate carvings:1.1), moonlit ruins, high resolution image, cinematic lighting"
-                
-                Example bad (too long):
-                "(Explorer:1.2) uncovering tarnished silver locket with (Lady's picture:1.1), moonlit jungle path revealed, eerie palm shadows, glimmering object in sand, volumetric lighting, dramatic composition, high resolution image, cinematic lighting"
-                """,
-            ),
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"Create a concise image prompt (max 30 words) for this scene:\n{context}",
-                }
-            ],
-        )
-
-        summary = response.messages[0]["content"]
-        print(f"Generated image prompt: {summary}")
-        return summary

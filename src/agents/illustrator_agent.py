@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Dict
 from PIL import Image
 import logging
 import torch
@@ -65,6 +65,54 @@ class IllustratorAgent:
                 low quality, distorted, deformed, disfigured, bad anatomy, 
                 out of frame, extra limbs, duplicate, meme, cartoon, anime""",
             "style_preset": "epic fantasy art, detailed, cinematic, atmospheric",
+        }
+
+        # Category-specific enhancement keywords
+        self.category_enhancements = {
+            "person": [
+                "detailed facial features",
+                "realistic skin texture",
+                "natural pose",
+                "expressive eyes",
+                "detailed clothing folds",
+                "anatomically correct",
+            ],
+            "landscape": [
+                "atmospheric perspective",
+                "detailed foliage",
+                "natural lighting",
+                "environmental storytelling",
+                "realistic textures",
+                "depth of field",
+            ],
+            "building": [
+                "architectural details",
+                "realistic materials",
+                "proper perspective",
+                "structural integrity",
+                "weathering effects",
+            ],
+            "interior": [
+                "ambient occlusion",
+                "realistic lighting",
+                "detailed furnishings",
+                "proper perspective",
+                "atmospheric depth",
+            ],
+            "object": [
+                "fine details",
+                "realistic materials",
+                "proper scale",
+                "surface texturing",
+                "realistic reflections",
+            ],
+            "creature": [
+                "anatomically plausible",
+                "detailed scales/fur/skin",
+                "realistic eyes",
+                "natural pose",
+                "proper proportions",
+            ],
         }
 
     def log_error(
@@ -148,23 +196,6 @@ class IllustratorAgent:
 
     def _enhance_scene_description(self, description: str) -> str:
         """Enhance scene description for better image generation."""
-        # Extract key elements
-        keywords = [
-            "castle",
-            "forest",
-            "lake",
-            "mountain",
-            "cave",
-            "village",
-            "ruins",
-            "temple",
-            "bridge",
-            "tower",
-            "river",
-            "valley",
-            "city",
-            "dungeon",
-        ]
 
         # Add environmental details
         time_indicators = [
@@ -227,13 +258,16 @@ class IllustratorAgent:
             # Allow override of default config via kwargs
             config = {**self.default_config, **kwargs}
 
+            # Commented this out to see if images still looks good without it.
             # Enhanced prompt building
-            enhanced_description = self._enhance_scene_description(
-                description
-            )
-            base_prompt = self._build_scene_prompt(
-                enhanced_description, style
-            )
+            # enhanced_description = self._enhance_scene_description(
+            #     description
+            # )
+            # base_prompt = self._build_scene_prompt(
+            #     enhanced_description, style
+            # )
+
+            base_prompt = self._build_scene_prompt(description, style)
             truncated_prompt = self._truncate_prompt(base_prompt)
 
             # Generate with error handling and progress callback
@@ -284,12 +318,27 @@ class IllustratorAgent:
 
         return image
 
-    def _build_scene_prompt(self, description: str, style: str) -> str:
-        """Build a complete prompt with all necessary elements"""
-        return f"""masterpiece digital art, {description}, {style}, 
-            epic fantasy environment, volumetric lighting, dramatic composition, 
-            detailed foreground and background elements, high detail landscape, 
-            professional photography, artstation trending, award winning"""
+    def _build_scene_prompt(
+        self, description: Dict[str, str], style: str
+    ) -> str:
+        """Build a complete prompt with category-specific enhancements"""
+        base_prompt = description["prompt"]
+        category = description["category"]
+
+        # Get category-specific enhancements
+        enhancements = ", ".join(
+            self.category_enhancements.get(category, [])[:3]
+        )
+        print(
+            f"\033[31mBase prompt:\033[0m {base_prompt}\n"
+            f"\033[31mEnhancements:\033[0m {enhancements}\n"
+            f"\033[31mStyle:\033[0m {style}\n"
+            f"\033[31mCategory:\033[0m {category}\n"
+        )
+        return f"""masterpiece digital art, {base_prompt}, {style}, 
+            {enhancements}, volumetric lighting, dramatic composition, 
+            detailed foreground and background elements,
+            professional photography, award winning"""
 
     async def generate_character_image(
         self,
@@ -312,8 +361,7 @@ class IllustratorAgent:
             # Build high-quality prompt with specific details
             base_prompt = f"""masterpiece digital art, detailed character portrait of {description}, 
                 {style}, dynamic pose, expressive lighting, detailed facial features, 
-                intricate costume details, professional character design, 
-                artstation trending, award winning fantasy art"""
+                intricate costume details, professional character design"""
 
             # Add negative prompt
             negative_prompt = """text, watermark, logo, title, signature, blurry, 
