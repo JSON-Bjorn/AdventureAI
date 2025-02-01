@@ -25,51 +25,95 @@ Usage:
 Requirements:
 """
 
-from agents import (
+import sys
+import os
+import asyncio
+import pygame
+import traceback
+
+# Add project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
+
+from src.agents import (
     TextAgent,
     SoundAgent,
     IllustratorAgent,
     TriageAgent,
     MoodAnalyzer,
 )
-from utils.database import Database
-from utils.dice_roller import DiceRoller
-from utils.display_manager import DisplayManager
-import pygame
-import asyncio
-import sys
-import traceback
+from src.utils.database import Database
+from src.utils.dice_roller import DiceRoller
+from src.utils.display_manager import DisplayManager
 
 
 async def instantialize_agents():
     try:
+        # Initialize display first
         display = DisplayManager()
+
+        # Initial loading screen
         display.render_loading("Gathering the party...")
         pygame.display.flip()
+        await asyncio.sleep(0.1)
 
+        # Initialize basic components
         dice_roller = DiceRoller()
         author = TextAgent()
         narrator = SoundAgent()
 
+        # Initialize illustrator
         display.render_loading("Summoning the illustrator...")
         pygame.display.flip()
+        await asyncio.sleep(0.1)
         illustrator = IllustratorAgent()
 
+        # Initialize mood analyzer
         display.render_loading("Consulting the sages...")
         pygame.display.flip()
+        await asyncio.sleep(0.1)
         mood_analyzer = MoodAnalyzer()
 
+        # Initialize dungeon master
         display.render_loading("Awakening the dungeon master...")
         pygame.display.flip()
+        await asyncio.sleep(0.1)
         dungeon_master = await TriageAgent.create(
             author, narrator, illustrator, mood_analyzer
         )
 
-        display.render_loading("Opening the storybook...")
+        # Generate initial story
+        display.render_loading("Writing your story's beginning...")
+        pygame.display.flip()
+        await dungeon_master.next_story()  # Generate first story segment
+
+        # Update display with initial story and image
+        display.update_story(dungeon_master.get_text())
+
+        display.render_loading("Creating the first scene...")
+        pygame.display.flip()
+        display.update_image(dungeon_master.get_image())
+
+        # Play initial voiceover and music
+        display.render_loading("Setting the mood...")
+        pygame.display.flip()
+        voiceover = dungeon_master.get_voiceover()
+        if voiceover:
+            voiceover.play_audio()
+
+        # Clear loading status and render initial state
+        display.set_loading_status("")
+        display.render()
         pygame.display.flip()
 
         print("Starting game loop...")
-        await game_loop(dice_roller, dungeon_master, display)
+
+        # Start the game loop
+        try:
+            await game_loop(dice_roller, dungeon_master, display)
+        except Exception as e:
+            print(f"Error in game loop: {e}")
+            raise
 
     except Exception as e:
         print("\nError during initialization:")
@@ -80,7 +124,8 @@ async def instantialize_agents():
 
     finally:
         if "illustrator" in locals():
-            illustrator.cleanup()
+            await illustrator.cleanup()
+        pygame.quit()
 
 
 async def game_loop(dice_roller, dungeon_master, display):
@@ -89,22 +134,7 @@ async def game_loop(dice_roller, dungeon_master, display):
 
     try:
         while game_active:
-            display.set_loading_status("Writing the next chapter...")
-            await dungeon_master.next_story()
-
-            # Update display with new story and image
-            display.update_story(dungeon_master.get_text())
-
-            display.set_loading_status("Painting the scene...")
-            display.update_image(dungeon_master.get_image())
-
-            # Play voiceover for new story
-            display.set_loading_status("Giving voice to the tale...")
-            voiceover = dungeon_master.get_voiceover()
-            if voiceover:
-                voiceover.play_audio()
-
-            # Clear loading status when everything is ready
+            # Clear any previous loading status
             display.set_loading_status("")
 
             # Input handling loop
@@ -113,7 +143,6 @@ async def game_loop(dice_roller, dungeon_master, display):
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         game_active = False
-                        # Save window position before breaking
                         display.save_window_position()
                         break
 
@@ -128,7 +157,8 @@ async def game_loop(dice_roller, dungeon_master, display):
             # Store the player's choice in the dungeon master
             dungeon_master.player_choice = player_choice
 
-            # Handle dice rolls
+            # Check if action needs a dice roll
+            display.set_loading_status("Evaluating action difficulty...")
             dice_roll_needed = dice_roller.assess_situation(
                 dungeon_master.current_story, player_choice
             )
@@ -140,7 +170,8 @@ async def game_loop(dice_roller, dungeon_master, display):
                     "Press SPACE or click the dice to roll!"
                 )
                 display.update_story(roll_text)
-                display.set_dice_button_active(True)  # Show dice button
+                display.set_dice_button_active(True)
+                display.set_loading_status("Awaiting your roll...")
                 display.render()
 
                 # Wait for spacebar or dice button click
@@ -164,10 +195,10 @@ async def game_loop(dice_roller, dungeon_master, display):
                 display.set_dice_button_active(False)
 
                 if game_active:
-                    # Show rolling animation/text
+                    display.set_loading_status("Rolling the dice...")
                     display.update_story("Rolling the dice...")
                     display.render()
-                    pygame.time.wait(500)  # Brief pause for drama
+                    pygame.time.wait(500)
 
                     # Now roll and show result
                     (success, player_roll) = dice_roller.roll_dice(
@@ -186,13 +217,30 @@ async def game_loop(dice_roller, dungeon_master, display):
 
                     # Pause to show result before continuing
                     pygame.time.wait(2000)
-
-                    # Show that we're generating the next part
-                    display.set_loading_status("Writing the next chapter...")
-                    display.render()
             else:
                 # If no roll needed, consider it a success
                 dungeon_master.success = True
+
+            # Generate next story segment
+            display.set_loading_status("Writing the next chapter...")
+            await dungeon_master.next_story()
+
+            # Generate image for the new scene
+            display.set_loading_status("Painting the scene...")
+            display.update_story(dungeon_master.get_text())
+            display.update_image(dungeon_master.get_image())
+
+            # Generate audio
+            display.set_loading_status("Creating voice narration...")
+            voiceover = dungeon_master.get_voiceover()
+            if voiceover:
+                voiceover.play_audio()
+
+            # Clear loading status when everything is ready
+            display.set_loading_status("")
+
+            # Now that everything is ready, clear the input
+            display.clear_input()
 
     finally:
         # Ensure window position is saved even if there's an error

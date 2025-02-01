@@ -1,6 +1,14 @@
+import os
+import sys
+import asyncio
 from swarm import Swarm, Agent
 from dotenv import load_dotenv
-import asyncio
+
+# Add project root to Python path
+project_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+sys.path.append(project_root)
 
 """
 Placeholder for triage agent instructions
@@ -93,6 +101,12 @@ class TriageAgent:
         self.current_image = None
         self.current_voiceover = None
         self.mood_analyzer = mood_analyzer
+        self.context_window = (
+            4  # Number of previous story segments to remember
+        )
+        # Initialize with default mood and intensity
+        self.current_intensity = 1
+        self.current_mood = "adventerous"
 
     # =====Class, return and transfer methods===== #
     @classmethod
@@ -125,22 +139,38 @@ class TriageAgent:
     # =====Gameplay methods===== #
     async def next_story(self):
         """Generate the next part of the story based on player's choice and outcome"""
+        # Build context with last few story segments
+        recent_history = (
+            self.story_history[-self.context_window :]
+            if self.story_history
+            else []
+        )
+
+        # Format recent history into a readable context
+        history_text = ""
+        for i, entry in enumerate(recent_history, 1):
+            history_text += f"Story {i}: {entry['story']}\n"
+            history_text += f"Player action: {entry['player_choice']}\n"
+            history_text += f"Success: {entry['success']}\n\n"
+
         # Build context for the author
         context = {
             "story_history": self.story_history,
+            "recent_history": history_text,
             "previous_story": self.current_story,
             "player_choice": self.player_choice,
             "player_choice_successful": self.success,
         }
 
-        # Get next story segment from author
+        # Get next story segment from author with expanded context
         response = self.client.run(
             agent=self.author,
             messages=[
                 {
                     "role": "user",
                     "content": (
-                        f"Previous story: {self.current_story}\n"
+                        f"Recent story history:\n{history_text}\n"
+                        f"Current story: {self.current_story}\n"
                         f"Player chose to: {self.player_choice}\n"
                         f"Player succeeded: {self.success}"
                     ),
@@ -163,7 +193,14 @@ class TriageAgent:
 
         # Analyze scene intensity and mood, then update music
         intensity, mood = self.mood_analyzer.analyze_scene(new_story)
-        self.narrator.play_background_music(intensity=intensity, mood=mood)
+
+        # Only update music if intensity or mood has changed
+        if intensity != self.current_intensity or mood != self.current_mood:
+            self.narrator.play_background_music(
+                intensity=intensity, mood=mood
+            )
+            self.current_intensity = intensity
+            self.current_mood = mood
 
         # Generate audio for the new story
         await self.narrator.generate_speech(new_story)

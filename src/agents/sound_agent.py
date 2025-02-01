@@ -30,8 +30,8 @@ class SoundAgent:
 
         # Initialize music directory structure
         self.music_root = Path("osrs music")
-        self.current_intensity = 1
-        self.current_mood = "adventerous"
+        self.current_intensity = None
+        self.current_mood = None
 
         # Start with adventerous music
         self.play_background_music(intensity=1, mood="adventerous")
@@ -101,24 +101,27 @@ class SoundAgent:
     def play_background_music(self, intensity: int = None, mood: str = None):
         """Play random background music matching the scene intensity and mood"""
         try:
-            # If no change in intensity and mood, keep current music
-            if (
+            # Update current settings if provided
+            if intensity is not None:
+                self.current_intensity = intensity
+            if mood is not None:
+                self.current_mood = mood
+
+            # If this is the first music being played, don't print "keeping" message
+            if self.background_sound is None:
+                print(
+                    f"Starting music (Intensity: {self.current_intensity}, Mood: {self.current_mood})"
+                )
+            # Only print "keeping" message if music is already playing and settings haven't changed
+            elif (
                 intensity is not None
                 and mood is not None
                 and intensity == self.current_intensity
                 and mood == self.current_mood
             ):
                 print(
-                    f"Keeping current music (Intensity: {self.current_intensity}, "
-                    f"Mood: {self.current_mood})"
+                    f"Keeping current music (Intensity: {self.current_intensity}, Mood: {self.current_mood})"
                 )
-                return
-
-            # Update current settings if provided
-            if intensity is not None:
-                self.current_intensity = intensity
-            if mood is not None:
-                self.current_mood = mood
 
             # Construct path to appropriate music folder
             music_dir = (

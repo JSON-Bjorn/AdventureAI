@@ -1,11 +1,18 @@
+import os
+import sys
 import pygame
 import textwrap
 from PIL import Image
 import io
 import numpy as np
-import os
 import json
 import time
+
+# Add project root to Python path
+project_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+sys.path.append(project_root)
 
 
 class DisplayManager:
@@ -148,7 +155,13 @@ class DisplayManager:
         """Save the current window position to config file"""
         try:
             # Get current window position
-            x, y = pygame.display.get_window_position()
+            try:
+                x, y = pygame.display.get_window_position()
+            except AttributeError:
+                # Fallback for pygame versions that don't support get_window_position
+                info = pygame.display.Info()
+                x = info.current_w // 4  # Default to 1/4 screen width
+                y = info.current_h // 4  # Default to 1/4 screen height
 
             # Ensure config directory exists
             os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
@@ -450,9 +463,6 @@ class DisplayManager:
             if event.key == pygame.K_RETURN:
                 # Join all lines and return the complete input
                 input_value = "\n".join(self.input_lines)
-                self.input_lines = [""]
-                self.input_scroll = 0
-                self.input_active = False
                 return input_value
 
             elif event.key == pygame.K_BACKSPACE:
@@ -472,18 +482,37 @@ class DisplayManager:
                 self.input_scroll += 1
 
             else:
-                # Add character to current line, checking width with larger font
-                current_line = self.input_lines[-1] + event.unicode
-                if (
-                    self.input_font.size(current_line)[0]
-                    > self.input_rect.width
-                    - 40  # Increased margin for larger font
-                ):
-                    self.input_lines.append(event.unicode)
+                # Get the current line and the new character
+                current_line = self.input_lines[-1]
+                new_char = event.unicode
+
+                # If it's a space and we're at the start of a line, ignore it
+                if new_char == " " and not current_line:
+                    return None
+
+                # Check if adding the character would exceed the width
+                test_line = current_line + new_char
+                line_width = self.input_font.size(test_line)[0]
+
+                if line_width > self.input_rect.width - 40:
+                    # Find the last space in the current line
+                    last_space = current_line.rfind(" ")
+
+                    if last_space != -1:
+                        # Move the word to the next line
+                        word_to_wrap = current_line[last_space + 1 :]
+                        self.input_lines[-1] = current_line[:last_space]
+                        self.input_lines.append(word_to_wrap + new_char)
+                    else:
+                        # If no space found, start a new line with the character
+                        self.input_lines.append(new_char)
+
+                    # Update scroll position if needed
                     if len(self.input_lines) > 3:
                         self.input_scroll = len(self.input_lines) - 3
                 else:
-                    self.input_lines[-1] += event.unicode
+                    # Add character to current line
+                    self.input_lines[-1] += new_char
 
         return None
 
@@ -511,3 +540,9 @@ class DisplayManager:
         """Enable or disable the dice button"""
         self.dice_button_active = active
         self.dice_button_hover = False
+
+    def clear_input(self):
+        """Clear the input text field"""
+        self.input_lines = [""]
+        self.input_scroll = 0
+        self.input_active = False

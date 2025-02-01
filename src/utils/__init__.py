@@ -1,6 +1,13 @@
+"""
+Utility modules for AdventureAI
+"""
+
 from .database import Database
 from .dice_roller import DiceRoller
+from .display_manager import DisplayManager
 
-"""Init file to make it a package"""
-
-__all__ = ["Database", "DiceRoller"]
+__all__ = [
+    "Database",
+    "DiceRoller",
+    "DisplayManager",
+]
