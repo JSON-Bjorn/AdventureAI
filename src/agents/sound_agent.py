@@ -61,23 +61,25 @@ class SoundAgent:
         """Play the TTS audio on the voice channel"""
         if self.current_audio and not self.is_playing:
             try:
-                self.current_audio.seek(0)
+                # Create a new BytesIO buffer for the thread
+                audio_data = self.current_audio.getvalue()
+                thread_buffer = io.BytesIO(audio_data)
                 self.is_playing = True
-                thread = threading.Thread(target=self._play_audio_thread)
+                thread = threading.Thread(
+                    target=self._play_audio_thread, args=(thread_buffer,)
+                )
                 thread.daemon = True
                 thread.start()
             except Exception as e:
                 print(f"Error starting audio playback: {e}")
                 self.is_playing = False
 
-    def _play_audio_thread(self):
+    def _play_audio_thread(self, audio_buffer):
         """Play TTS audio in a separate thread using the voice channel"""
         try:
-            self.current_audio.seek(0)
-
             # Load the audio into a Sound object
             try:
-                sound_obj = pygame.mixer.Sound(self.current_audio)
+                sound_obj = pygame.mixer.Sound(audio_buffer)
                 self.voice_sound = sound_obj
 
                 # Play on voice channel
@@ -95,8 +97,7 @@ class SoundAgent:
 
         finally:
             self.is_playing = False
-            if self.current_audio:
-                self.current_audio.seek(0)
+            audio_buffer.close()
 
     def play_background_music(self, intensity: int = None, mood: str = None):
         """Play random background music matching the scene intensity and mood"""

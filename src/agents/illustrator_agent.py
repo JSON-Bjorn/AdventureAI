@@ -64,7 +64,6 @@ class IllustratorAgent:
             "negative_prompt": """text, watermark, logo, title, signature, blurry, 
                 low quality, distorted, deformed, disfigured, bad anatomy, 
                 out of frame, extra limbs, duplicate, meme, cartoon, anime""",
-            "style_preset": "epic fantasy art, detailed, cinematic, atmospheric",
         }
 
         # Category-specific enhancement keywords
@@ -241,34 +240,31 @@ class IllustratorAgent:
 
     async def generate_scene_image(
         self,
-        description: str,
-        style: str = None,
-        width: int = 512,
+        prompt: str,
+        width: int = 768,
         height: int = 768,
         **kwargs,
     ) -> Optional[Image.Image]:
-        """Generate an image for a scene based on the description."""
+        """Generate an image based on the provided prompt"""
         try:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-            # Use provided style or default
-            style = style or self.default_config["style_preset"]
+            # Extract prompt and negative_prompt if provided as dict
+            if isinstance(prompt, dict):
+                negative_prompt = prompt.get(
+                    "negative_prompt", self.default_config["negative_prompt"]
+                )
+                prompt = prompt["prompt"]
+            else:
+                negative_prompt = self.default_config["negative_prompt"]
 
             # Allow override of default config via kwargs
             config = {**self.default_config, **kwargs}
+            config["negative_prompt"] = negative_prompt
 
-            # Commented this out to see if images still looks good without it.
-            # Enhanced prompt building
-            # enhanced_description = self._enhance_scene_description(
-            #     description
-            # )
-            # base_prompt = self._build_scene_prompt(
-            #     enhanced_description, style
-            # )
-
-            base_prompt = self._build_scene_prompt(description, style)
-            truncated_prompt = self._truncate_prompt(base_prompt)
+            # Truncate prompt if needed
+            truncated_prompt = self._truncate_prompt(prompt)
 
             # Generate with error handling and progress callback
             return await self._generate_with_fallback(
@@ -317,28 +313,6 @@ class IllustratorAgent:
             ).images[0]
 
         return image
-
-    def _build_scene_prompt(
-        self, description: Dict[str, str], style: str
-    ) -> str:
-        """Build a complete prompt with category-specific enhancements"""
-        base_prompt = description["prompt"]
-        category = description["category"]
-
-        # Get category-specific enhancements
-        enhancements = ", ".join(
-            self.category_enhancements.get(category, [])[:3]
-        )
-        print(
-            f"\033[31mBase prompt:\033[0m {base_prompt}\n"
-            f"\033[31mEnhancements:\033[0m {enhancements}\n"
-            f"\033[31mStyle:\033[0m {style}\n"
-            f"\033[31mCategory:\033[0m {category}\n"
-        )
-        return f"""masterpiece digital art, {base_prompt}, {style}, 
-            {enhancements}, volumetric lighting, dramatic composition, 
-            detailed foreground and background elements,
-            professional photography, award winning"""
 
     async def generate_character_image(
         self,

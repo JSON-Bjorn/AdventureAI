@@ -94,15 +94,124 @@ class PromptGenerator:
             """,
         )
 
+        # Add category-specific enhancement keywords
+        self.category_enhancements = {
+            "person": [
+                "detailed facial features",
+                "realistic skin texture",
+                "natural pose",
+                "expressive eyes",
+                "detailed clothing folds",
+                "anatomically correct",
+            ],
+            "landscape": [
+                "atmospheric perspective",
+                "detailed foliage",
+                "natural lighting",
+                "environmental storytelling",
+                "realistic textures",
+                "depth of field",
+            ],
+            "building": [
+                "architectural details",
+                "realistic materials",
+                "proper perspective",
+                "structural integrity",
+                "weathering effects",
+            ],
+            "interior": [
+                "ambient occlusion",
+                "realistic lighting",
+                "detailed furnishings",
+                "proper perspective",
+                "atmospheric depth",
+            ],
+            "object": [
+                "fine details",
+                "realistic materials",
+                "proper scale",
+                "surface texturing",
+                "realistic reflections",
+            ],
+            "creature": [
+                "anatomically plausible",
+                "detailed scales/fur/skin",
+                "realistic eyes",
+                "natural pose",
+                "proper proportions",
+            ],
+        }
+
+        # Add category-specific negative prompts
+        self.category_negatives = {
+            "person": [
+                "extra limbs",
+                "deformed hands",
+                "multiple heads",
+                "wrong anatomy",
+                "extra fingers",
+                "mutation",
+                "twisted body",
+                "malformed limbs",
+            ],
+            "landscape": [
+                "blurry background",
+                "distorted perspective",
+                "unnatural colors",
+                "floating objects",
+                "impossible geometry",
+            ],
+            "building": [
+                "floating architecture",
+                "impossible structures",
+                "melting walls",
+                "wrong perspective",
+                "inconsistent scale",
+            ],
+            "interior": [
+                "floating furniture",
+                "impossible space",
+                "wrong perspective",
+                "inconsistent lighting",
+                "melting objects",
+            ],
+            "object": [
+                "deformed shape",
+                "wrong scale",
+                "floating parts",
+                "impossible physics",
+                "melting objects",
+            ],
+            "creature": [
+                "extra limbs",
+                "wrong anatomy",
+                "multiple heads",
+                "deformed body",
+                "unnatural joints",
+                "impossible biology",
+            ],
+        }
+
+        # Base negative prompt that applies to all categories
+        self.base_negative = """text, watermark, logo, title, signature, 
+            blurry, low quality, distorted, deformed, disfigured, 
+            out of frame, duplicate, meme, cartoon, anime"""
+
+        # Add style presets
+        self.style_preset = (
+            "epic fantasy art, detailed, cinematic, atmospheric"
+        )
+
     def create_prompt(
-        self, story_text: str, previous_story: str = None
-    ) -> Dict[str, str]:
-        """Convert story text into an optimized image generation prompt with category"""
+        self, story_text: str, previous_story: str = None, style: str = None
+    ) -> dict:
+        """Convert story text into a complete image generation prompt"""
         context = ""
         if previous_story:
             context = f"{previous_story}\n"
         context += story_text
 
+        # Get base prompt and category from GPT
         response = self.client.run(
             agent=self.agent,
             messages=[
@@ -120,18 +229,50 @@ class PromptGenerator:
             base_prompt = result["prompt"]
             category = result["category"]
 
-            enhanced_prompt = self._enhance_prompt(base_prompt)
-            print(
-                f"\033[31mFull prompt:\033[0m {enhanced_prompt} (Category: {category})"
+            # Add environmental details
+            enhanced_base = self._enhance_prompt(base_prompt)
+
+            # Get category-specific enhancements
+            enhancements = ", ".join(
+                self.category_enhancements.get(category, [])[:3]
             )
 
-            return {"prompt": enhanced_prompt, "category": category}
-        except Exception as e:
+            # Get category-specific negative prompts
+            category_negatives = ", ".join(
+                self.category_negatives.get(category, [])
+            )
+            negative_prompt = f"{self.base_negative}, {category_negatives}"
+
+            # Use provided style or default
+            style = style or self.style_preset
+
+            # Build final prompt
+            final_prompt = f"""masterpiece digital art, {enhanced_base}, {style}, 
+                {enhancements}, volumetric lighting, dramatic composition, 
+                detailed foreground and background elements,
+                professional photography, award winning"""
+
+            print(
+                f"\033[91m -  - IMAGE PROMPT -  - \033[0m\n"
+                f"Base prompt: {base_prompt}\n"
+                f"Enhancements: {enhancements}\n"
+                f"Style: {style}\n"
+                f"Category: {category}\n"
+                f"Negative prompt: {negative_prompt}\n"
+                f"Final prompt: {final_prompt}\n"
+            )
+
             return {
-                "prompt": self._enhance_prompt(
-                    response.messages[0]["content"]
-                ),
-                "category": "landscape",  # Default fallback
+                "prompt": final_prompt,
+                "negative_prompt": negative_prompt,
+            }
+
+        except Exception as e:
+            print(f"Error creating prompt: {e}")
+            # Return basic prompts as fallback
+            return {
+                "prompt": f"masterpiece digital art, {story_text}, {self.style_preset}",
+                "negative_prompt": self.base_negative,
             }
 
     def _enhance_prompt(self, base_prompt: str) -> str:

@@ -229,15 +229,15 @@ class TriageAgent:
             self.story_history[-1]["story"] if self.story_history else None
         )
 
-        # Generate optimized prompt
-        scene_prompt = self.prompt_generator.create_prompt(
+        # Generate complete prompt
+        prompt = self.prompt_generator.create_prompt(
             self.current_story, previous_story
         )
 
-        print(f"Generated image prompt: {scene_prompt}")
+        print(f"Generated image prompt: {prompt}")
 
         image = await self.illustrator.generate_scene_image(
-            description=scene_prompt,
+            prompt=prompt,
             width=768,
             height=768,
         )
