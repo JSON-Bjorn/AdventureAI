@@ -15,11 +15,10 @@ Make it explicit and learn it how to write proper juggernaut prompts.
 
 Vi får bra bilder på:
 - landscapes
-- 
+- anatomy (ibland, the occational ai fuckup med ett extra ben)
 
 Vi får dåliga bilder på:
-- människor
-- anatomi
+- ansikten
 - gräs av någon anledning
 - detaljerade saker
     (overall image looks good, but details are bad)
@@ -28,6 +27,10 @@ Lösning:
 Håller på med denna nu.
 Vad jag gjort:
 - förminskat prompt-storlek med 30% (vi slår i taket och truncatear hela tiden)
+- Flyttat all prompt engineering till 'prompt engineer' klassen
+    Här skapar vi base prompt från story, bestämmer vad som är i mitten av bilden och tilldelar en kategori, lägger till enhancements baserat på kategori, skickar färdig prompt till SD.
+
+
 
 
 
