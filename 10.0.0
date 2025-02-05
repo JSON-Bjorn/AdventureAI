@@ -1,6 +1,0 @@
-Collecting numpy==1.24.3
-  Using cached numpy-1.24.3.tar.gz (10.9 MB)
-  Installing build dependencies: started
-  Installing build dependencies: finished with status 'done'
-  Getting requirements to build wheel: started
-  Getting requirements to build wheel: finished with status 'done'

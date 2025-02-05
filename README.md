@@ -8,6 +8,13 @@ Just nu håller jag (Björn) på att försöka fixa till Git och få allt att va
 
 Felix håller på att skissa i vår miro samt planera arbetet framåt. Han gör även mockups av vår frontend så vi kan diskutera hur det ska se ut osv.
 
+# React APP
+
+1. git clone https://github.com/Bjorn-Bjorn/AdventureAI.git
+2. cd AdventureAI/adventure-ai
+3. npm install
+4. npm start
+5. Win
 
 # Webpage
 
