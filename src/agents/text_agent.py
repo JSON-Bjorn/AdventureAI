@@ -1,6 +1,7 @@
 import os
 import sys
-from swarm import Swarm, Agent
+from swarm import Agent, Swarm
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
 # Add project root to Python path
@@ -13,12 +14,15 @@ sys.path.append(project_root)
 class TextAgent:
     def __init__(self):
         load_dotenv()
-        self.client = Swarm()
+        print("\n=== Initializing TextAgent ===")
+        print("1. Setting up OpenAI client...")
+        self.client = AsyncOpenAI()
+
+        # Create Swarm agent
         self.agent = Agent(
-            name="The Author",
+            name="Story Generator",
             model="gpt-4",
-            instructions="""
-You are a versatile storyteller for an interactive adventure game that adapts to ANY player choice.
+            instructions="""You are a versatile storyteller for an interactive adventure game that adapts to ANY player choice.
 Generate short, focused narratives (50 words max) that advance the story based on exactly what the player wants to do.
 
 Key requirements:
@@ -29,40 +33,34 @@ Key requirements:
 5. Return ONLY the story text, no meta commentary
 6. Maintain consistency with the recent story history
 
-Story Principles:
-- Adapt to the player's desired tone and scale
-- Support both grand adventures and quiet moments
-- Let players shape the kind of story they want to experience
-- Build naturally on their choices without forcing direction
-- Reference relevant details from recent history
-- Maintain continuity with established elements
-
-Context Usage:
-- Read the provided story history to maintain consistency
-- Reference previously established locations and characters
-- Keep track of the player's chosen direction and tone
-- Avoid contradicting earlier story elements
-- Build upon previously revealed information
-
-If player_choice_successful is True:
-- Show the exact outcome they were trying to achieve
-- Include vivid details that make the success feel real
-- Maintain their chosen tone (epic, mysterious, casual, etc.)
-- Connect outcomes to previous story elements when relevant
-
-If player_choice_successful is False:
-- Show realistic consequences of that specific failure
-- Keep the failure proportional to the attempt
-- Create natural follow-up situations
-- Ensure failures consider the established context
-
-Example good responses:
-
-[Previous: "The ancient door looms before you." Player: "I want to push it open"]
-"The massive stone door grinds open, revealing a chamber filled with glittering treasures. Golden light spills from crystals above, illuminating artifacts untouched for centuries."
-
-[Previous: "The tavern is warm and busy." Player: "I want to listen to the conversations"]
-"You catch fragments of excited chatter about a merchant's missing cargo, rumors of strange lights in the hills, and local gossip about the baker's new apprentice."
+If this is the first story (no previous context), create an engaging opening scene that sets up an adventure.
 
 Remember: Return ONLY the story text. No explanations or meta text.""",
         )
+        print("=== TextAgent initialization complete ===\n")
+
+    async def generate_story(self, context: str) -> str:
+        """Generate the next part of the story based on the given context."""
+        try:
+            print("\nDEBUG: Starting story generation")
+            print("DEBUG: Context:", context)
+
+            # Use Swarm client to run the agent
+            swarm = Swarm()
+            response = swarm.run(
+                agent=self.agent,
+                messages=[{"role": "user", "content": context}],
+            )
+
+            story = response.messages[-1]["content"].strip()
+            print("DEBUG: Generated story:", story)
+            return story
+        except Exception as e:
+            print("\nDEBUG: Error in generate_story")
+            print(f"DEBUG: Error type: {type(e).__name__}")
+            print(f"DEBUG: Error message: {str(e)}")
+            import traceback
+
+            print("DEBUG: Stack trace:")
+            traceback.print_exc()
+            raise

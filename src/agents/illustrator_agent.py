@@ -28,23 +28,24 @@ class IllustratorAgent:
         self.max_tokens = 77  # CLIP token limit
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+        self._is_initialized = False
 
         # Configure CUDA settings
-        torch.backends.cuda.matmul.allow_tf32 = (
-            True  # Better performance on RTX 30 series
-        )
-        torch.backends.cudnn.allow_tf32 = True
-
-        # GPU diagnostics with more detail
-        print("\nGPU Diagnostics:")
         if torch.cuda.is_available():
+            torch.backends.cuda.matmul.allow_tf32 = (
+                True  # Better performance on RTX 30 series
+            )
+            torch.backends.cudnn.allow_tf32 = True
+            self.device = "cuda"
+
+            # Print GPU diagnostics
+            print("\nGPU Diagnostics:")
             print(f"CUDA available: {torch.cuda.is_available()}")
             print(f"CUDA version: {torch.version.cuda}")
             print(f"GPU device: {torch.cuda.get_device_name(0)}")
             print(
                 f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB"
             )
-            self.device = "cuda"
         else:
             print("No CUDA GPU detected. Please check:")
             print("1. NVIDIA drivers are up to date")
@@ -54,7 +55,6 @@ class IllustratorAgent:
             raise RuntimeError("CUDA GPU required for image generation")
 
         # This should be a reference to where we give the image prompts.
-        # We could make it a Swarm agent. If we don't, we still call it agent for uniformity
         self.agent = None
 
         # Add configuration parameters for better control
@@ -129,51 +129,117 @@ class IllustratorAgent:
 
     async def initialize(self):
         """Initialize the image generation pipeline."""
+        if self._is_initialized:
+            print("Illustrator already initialized, skipping...")
+            return
+
         try:
-            print("Initializing image generation pipeline...")
-            print(f"Using device: {self.device}")
+            print("\n=== Initializing IllustratorAgent ===")
+            print(f"1. Device configuration: {self.device}")
+            print("2. Memory status before initialization:")
+            if torch.cuda.is_available():
+                print(
+                    f"- CUDA memory allocated: {torch.cuda.memory_allocated(0) / 1024**2:.2f} MB"
+                )
+                print(
+                    f"- CUDA memory cached: {torch.cuda.memory_reserved(0) / 1024**2:.2f} MB"
+                )
+
+            # Clear CUDA cache before loading model
+            if torch.cuda.is_available():
+                print("3. Clearing CUDA cache...")
+                torch.cuda.empty_cache()
 
             model_path = os.path.join(self.models_dir, self.model_file)
+            print(f"4. Checking model path: {model_path}")
             if not os.path.exists(model_path):
                 print(f"Error: Model not found at {model_path}")
                 print(
                     f"Please ensure the model file '{self.model_file}' is in the models directory"
                 )
+                print(f"Current directory structure:")
+                print(
+                    f"- Models dir exists: {os.path.exists(self.models_dir)}"
+                )
+                print(
+                    f"- Contents of models dir: {os.listdir(self.models_dir) if os.path.exists(self.models_dir) else 'N/A'}"
+                )
                 raise FileNotFoundError(f"Model not found at {model_path}")
 
-            print(f"Loading model from: {model_path}")
-
-            # Load pipeline with CUDA optimizations
-            self.pipeline = StableDiffusionXLPipeline.from_single_file(
-                model_path,
-                torch_dtype=torch.float16,  # Use half precision for VRAM efficiency
-                use_safetensors=True,
-                variant="fp16",
-            ).to(self.device)
-
-            # Enable memory efficient settings
-            self.pipeline.enable_attention_slicing()
-            self.pipeline.enable_vae_tiling()
-
-            # Enable xformers for better performance if available
+            print("5. Loading pipeline...")
             try:
-                self.pipeline.enable_xformers_memory_efficient_attention()
-                print("Enabled xformers memory efficient attention")
+                self.pipeline = StableDiffusionXLPipeline.from_single_file(
+                    model_path,
+                    torch_dtype=torch.float16,
+                    use_safetensors=True,
+                    variant="fp16",
+                )
+                print("6. Pipeline loaded successfully")
             except Exception as e:
-                print(f"Xformers not available: {e}")
+                print(f"Error loading pipeline: {str(e)}")
+                raise
 
-            print("Pipeline initialized successfully on GPU!")
+            print("7. Moving pipeline to device and optimizing...")
+            try:
+                self.pipeline.to(self.device)
+                self.pipeline.enable_attention_slicing(slice_size="max")
+                self.pipeline.enable_vae_tiling()
+                self.pipeline.enable_model_cpu_offload()
+                print("8. Pipeline optimization complete")
+            except Exception as e:
+                print(f"Error during pipeline optimization: {str(e)}")
+                raise
+
+            try:
+                print("9. Enabling xformers...")
+                self.pipeline.enable_xformers_memory_efficient_attention()
+                print("10. Xformers enabled successfully")
+            except Exception as e:
+                print(f"Note: Xformers not available: {e}")
+
+            self._is_initialized = True
+            print("\n=== IllustratorAgent initialization complete ===")
+            print("Final memory status:")
+            if torch.cuda.is_available():
+                print(
+                    f"- CUDA memory allocated: {torch.cuda.memory_allocated(0) / 1024**2:.2f} MB"
+                )
+                print(
+                    f"- CUDA memory cached: {torch.cuda.memory_reserved(0) / 1024**2:.2f} MB\n"
+                )
 
         except Exception as e:
-            self.log_error("Failed to initialize image generator", e)
+            print(f"\n=== Error in IllustratorAgent initialization ===")
+            print(f"Error type: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+            import traceback
+
+            traceback.print_exc()
+            # Clean up if initialization fails
+            await self.cleanup()
             raise
 
     async def cleanup(self):
         """Clean up resources."""
         if self.pipeline is not None:
-            del self.pipeline
-            torch.cuda.empty_cache()
-            self.pipeline = None
+            try:
+                self.pipeline.to("cpu")  # Move to CPU first
+                del self.pipeline
+                self.pipeline = None
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()  # Clear CUDA cache
+                self._is_initialized = False
+            except Exception as e:
+                self.log_error("Error during cleanup", e)
+
+    async def reset_state(self):
+        """Reset the agent's state without reinitializing the pipeline"""
+        if not self._is_initialized:
+            await self.initialize()
+        else:
+            # Clear any temporary memory
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     def _truncate_prompt(self, prompt: str) -> str:
         """Truncate prompt to stay within CLIP's token limit."""
@@ -246,8 +312,12 @@ class IllustratorAgent:
         **kwargs,
     ) -> Optional[Image.Image]:
         """Generate an image based on the provided prompt"""
+        if not self._is_initialized:
+            await self.initialize()
+
         try:
             if torch.cuda.is_available():
+                # Clear cache before generation
                 torch.cuda.empty_cache()
 
             # Extract prompt and negative_prompt if provided as dict

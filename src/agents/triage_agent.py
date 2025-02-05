@@ -3,7 +3,7 @@ import sys
 import asyncio
 from swarm import Swarm, Agent
 from dotenv import load_dotenv
-from src.utils.prompt_generator import PromptGenerator
+from utils.prompt_generator import PromptGenerator
 
 # Add project root to Python path
 project_root = os.path.dirname(
@@ -102,12 +102,12 @@ class TriageAgent:
         self.current_image = None
         self.current_voiceover = None
         self.mood_analyzer = mood_analyzer
+        self.current_mood = "adventerous"  # Default mood
         self.context_window = (
             4  # Number of previous story segments to remember
         )
         # Initialize with default mood and intensity
         self.current_intensity = 1
-        self.current_mood = "adventerous"
         self.prompt_generator = PromptGenerator()
 
     # =====Class, return and transfer methods===== #
@@ -137,6 +137,10 @@ class TriageAgent:
 
     def get_image(self):
         return self.current_image
+
+    def get_mood(self):
+        """Get the current mood of the story"""
+        return self.current_mood
 
     # =====Gameplay methods===== #
     async def next_story(self):
@@ -193,16 +197,10 @@ class TriageAgent:
             )
         self.current_story = new_story
 
-        # Analyze scene intensity and mood, then update music
+        # Analyze scene intensity and mood
         intensity, mood = self.mood_analyzer.analyze_scene(new_story)
-
-        # Only update music if intensity or mood has changed
-        if intensity != self.current_intensity or mood != self.current_mood:
-            self.narrator.play_background_music(
-                intensity=intensity, mood=mood
-            )
-            self.current_intensity = intensity
-            self.current_mood = mood
+        self.current_mood = mood  # Store the current mood
+        self.current_intensity = intensity
 
         # Generate audio for the new story
         await self.narrator.generate_speech(new_story)
