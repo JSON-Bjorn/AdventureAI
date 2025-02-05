@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Layout</title>
+    
+    <!-- React and ReactDOM -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        .expanded {
+            height: 50vh;
+            width: 100%; /* Make width consistent */
+            transition: height 0.3s ease-in-out;
+            position: absolute;
+            bottom: 100%;
+            transform-origin: bottom;
+        }
+        
+        .collapsed {
+            height: 100px;
+            width: 100%; /* Make width consistent */
+            transition: height 0.3s ease-in-out;
+            position: relative;
+            bottom: 0;
+        }
+
+        .menu-container {
+            width: 60%;
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+        }
+
+        .aspect-wrapper {
+            aspect-ratio: 16/9;
+            max-height: 100vh;
+            max-width: 177.78vh; /* 16/9 ratio */
+            margin: auto;
+            position: relative; /* Added for absolute positioning reference */
+        }
+
+        @media (max-aspect-ratio: 16/9) {
+            .aspect-wrapper {
+                max-width: 100vw;
+                max-height: 56.25vw; /* 9/16 ratio */
+            }
+        }
+
+        .square-button {
+            width: 14.4%;  /* Increased from 12% by 20% */
+            height: 0;
+            padding-bottom: 14.4%; /* Makes it square */
+            position: relative;
+        }
+
+        .button-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-900">
+    <div id="root" class="min-h-screen flex items-center justify-center bg-gray-900"></div>
+
+    <script type="text/babel">
+        function App() {
+            const [isExpanded, setIsExpanded] = React.useState(false);
+            
+            return (
+                <div className="aspect-wrapper bg-gray-900 text-gray-200 p-2">
+                    <div className="flex gap-2 h-[73%]">
+                        {/* Text Area */}
+                        <div className="text_area inline-block h-full w-1/2 bg-gray-800 p-3 border border-black rounded-lg">
+                            <div className="generated_text h-[75%] w-full overflow-y-auto bg-gray-700 p-4 rounded-lg border border-black">
+                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                            </div>
+                            <textarea 
+                                className="input_text h-[25%] w-full bg-gray-700 p-3 mt-2 rounded-lg resize-none border border-black"
+                                placeholder="Your text here"
+                            />
+                        </div>
+
+                        {/* Image Area */}
+                        <div className="image_area inline-block h-full w-1/2 bg-gray-800 p-3 border border-black rounded-lg">
+                            {/* Image content will go here */}
+                        </div>
+                    </div>
+
+                    {/* Interactive Area */}
+                    <div className="interactive_area h-[25%] w-full bg-gray-800 flex gap-2 mt-2 p-3 border border-black rounded-lg">
+                        {/* Button Area */}
+                        <div className="button_area inline-block h-full w-1/2 bg-gray-700 flex items-center justify-around p-3 border border-black rounded-lg">
+                            <div className="square-button">
+                                <div className="button-content bg-gray-600 rounded-lg hover:bg-gray-500 border border-black">
+                                    Button 1
+                                </div>
+                            </div>
+                            <div className="square-button">
+                                <div className="button-content bg-gray-600 rounded-lg hover:bg-gray-500 border border-black">
+                                    Button 2
+                                </div>
+                            </div>
+                            <div className="square-button">
+                                <div className="button-content bg-gray-600 rounded-lg hover:bg-gray-500 border border-black">
+                                    Button 3
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Inventory Area */}
+                        <div className="inventory_area inline-block h-full w-1/2 bg-gray-700 relative p-3 border border-black rounded-lg">
+                            <div className="menu-container">
+                                <div 
+                                    className={`bg-gray-600 cursor-pointer border border-black rounded-t-lg ${isExpanded ? 'expanded' : 'collapsed'}`}
+                                    onClick={() => setIsExpanded(!isExpanded)}
+                                >
+                                    <div className="text-center p-2">
+                                        {isExpanded ? '▼ Collapse' : '▲ Expand'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
