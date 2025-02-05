@@ -1,45 +1,30 @@
 import React from 'react';
-import { HStack, Button } from '@chakra-ui/react';
+import { Box, Button, Text, VStack } from '@chakra-ui/react';
 
 interface DiceRollProps {
     onRoll: () => void;
+    requiredRoll: number | undefined;
+    disabled: boolean;
 }
 
-const DiceRoll: React.FC<DiceRollProps> = ({ onRoll }) => {
+const DiceRoll: React.FC<DiceRollProps> = ({ onRoll, requiredRoll, disabled }) => {
     return (
-        <HStack spacing={4} justify="center">
-            <Button
-                onClick={onRoll}
-                bg="linear-gradient(145deg, #ffd700, #ffa500)"
-                color="black"
-                _hover={{ opacity: 0.8 }}
-                size="lg"
-                borderRadius="xl"
-                boxShadow="lg"
-            >
-                Roll Dice
-            </Button>
-            <Button
-                bg="linear-gradient(145deg, #ffd700, #ffa500)"
-                color="black"
-                _hover={{ opacity: 0.8 }}
-                size="lg"
-                borderRadius="xl"
-                boxShadow="lg"
-            >
-                Button?
-            </Button>
-            <Button
-                bg="linear-gradient(145deg, #ffd700, #ffa500)"
-                color="black"
-                _hover={{ opacity: 0.8 }}
-                size="lg"
-                borderRadius="xl"
-                boxShadow="lg"
-            >
-                Button?
-            </Button>
-        </HStack>
+        <Box bg="gray.700" p={4} borderRadius="md">
+            <VStack spacing={4}>
+                <Text color="white" fontSize="lg" textAlign="center">
+                    {requiredRoll ? `Roll ${requiredRoll} or higher to succeed!` : 'Ready to roll?'}
+                </Text>
+                <Button
+                    colorScheme="blue"
+                    size="lg"
+                    onClick={onRoll}
+                    isDisabled={disabled}
+                    width="full"
+                >
+                    Roll the Dice!
+                </Button>
+            </VStack>
+        </Box>
     );
 };
 

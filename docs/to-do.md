@@ -46,3 +46,16 @@ Put the loras at the start of the prompt to avoid truncating them from the promp
 
 # Make dice rolls happen slightly more frequent (dont use ai for this, hes is just gonna fuck it up)
 
+
+# Migrate to react frontend
+- Det här har kommit a looong way idag.
+Vi har faktiskt en fungerande frontend nu.
+Mycket buggar, inte interagerbar alls.
+Men vi kan starta ett spel och få fram texten.
+Bilderna genereras, alla api calls görs men ljudfilerna samd bilden når aldrig frontend.
+Behövde lite hjälp så ai har lagt till en massa onödigt shit.
+Exempelvis så sparar vi alla bilder i static/images.
+Samt ljudfiler i static/audio.
+Det här måste väck vid nästa code session.
+Just nu har jag tatgit bort dem så att vi inte pushar ut 253 bilder på github.
+

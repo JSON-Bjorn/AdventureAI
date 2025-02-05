@@ -1,21 +1,18 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import GameInterface from './components/Game/GameInterface';
+import LandingPage from './components/LandingPage';
 
-function App() {
-    const handleAction = (action: string) => {
-        console.log('Player action:', action);
-    };
-
-    const handleRoll = () => {
-        console.log('Dice rolled!');
-    };
-
+const App: React.FC = () => {
     return (
-        <GameInterface
-            onAction={handleAction}
-            onRoll={handleRoll}
-        />
+        <Router>
+            <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/game" element={<GameInterface />} />
+                <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+        </Router>
     );
-}
+};
 
 export default App; 
