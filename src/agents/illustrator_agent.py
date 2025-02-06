@@ -384,56 +384,6 @@ class IllustratorAgent:
 
         return image
 
-    async def generate_character_image(
-        self,
-        description: str,
-        style: str = "epic fantasy character art, detailed portrait, cinematic",
-        width: int = 512,
-        height: int = 768,
-    ) -> Optional[Image.Image]:
-        """Generate an image for a character based on the description."""
-        try:
-            # Clear CUDA cache before generation
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
-            # Generate random seed
-            generator = torch.Generator(device=self.device).manual_seed(
-                int(torch.randint(0, 2**32 - 1, (1,)).item())
-            )
-
-            # Build high-quality prompt with specific details
-            base_prompt = f"""masterpiece digital art, detailed character portrait of {description}, 
-                {style}, dynamic pose, expressive lighting, detailed facial features, 
-                intricate costume details, professional character design"""
-
-            # Add negative prompt
-            negative_prompt = """text, watermark, logo, title, signature, blurry, 
-                low quality, distorted, deformed, disfigured, bad anatomy, 
-                out of frame, extra limbs, duplicate, meme, cartoon, anime"""
-
-            truncated_prompt = self._truncate_prompt(base_prompt)
-
-            # Balanced generation settings
-            with torch.inference_mode():
-                image = self.pipeline(
-                    prompt=truncated_prompt,
-                    negative_prompt=negative_prompt,
-                    width=width,
-                    height=height,
-                    num_inference_steps=6,  # Balanced speed and quality
-                    guidance_scale=2.0,  # Moderate guidance for natural results
-                    num_images_per_prompt=1,
-                    generator=generator,
-                    output_type="pil",
-                ).images[0]
-
-            return image
-
-        except Exception as e:
-            self.log_error("Error generating character image", e)
-            return None
-
     def save_image(self, image: Image.Image, filepath: str) -> bool:
         """Save the generated image to disk."""
         try:

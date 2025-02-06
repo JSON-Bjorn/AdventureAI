@@ -7,8 +7,8 @@ from typing import Optional, List
 import asyncio
 import time
 
-from adventureai import AdventureGame
-from utils import ResourceManager
+from .adventureai import AdventureGame
+from .utils import ResourceManager
 
 app = FastAPI()
 
