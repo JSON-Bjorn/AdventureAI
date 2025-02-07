@@ -27,16 +27,12 @@ def install_requirements(file_path):
 def main():
     # Get the absolute path to the requirements files
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    requirements_core = os.path.join(
-        base_dir, "src", "requirements", "requirements-core.txt"
-    )
-    requirements_extras = os.path.join(
-        base_dir, "src", "requirements", "requirements-extras.txt"
+    requirements = os.path.join(
+        base_dir, "src", "requirements", "requirements.txt"
     )
 
     # Install dependencies from both files
-    install_requirements(requirements_core)
-    install_requirements(requirements_extras)
+    install_requirements(requirements)
 
     print("All dependencies installed successfully!")
 
