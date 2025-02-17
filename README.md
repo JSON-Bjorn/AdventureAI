@@ -2,12 +2,11 @@ Jag håller på att skriva om backend i på denna branch.
 
 # Progress
 ### Current
-- Vi connectar till SD API
-    - SD API är optimiserad.
-    - Vi behöver dock optimisera initieringen av pipeline (triton?)
-- sd_test.py öppnar bilder. sweet.
+Håller på att skriva ut game loopen och boilerplate code för att få en grund.
+
 
 ### Next
+- Gå igenom game loop och se så att vi skickar ochg returnerar rätt saker.
 - Gör en mi_test.py för LLM API
 - Implementera LLM och SD API i game loop
 - Connecta skiten till frontend och se o mvi får fram bild och text

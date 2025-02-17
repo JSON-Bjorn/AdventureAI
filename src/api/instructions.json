@@ -1,0 +1,4 @@
+{
+    "compress_context": "Summarize the following text into a maximum of 100 characters",
+    "determine_dice_roll": "Determine the dice roll threshhold based on the following text"
+}
