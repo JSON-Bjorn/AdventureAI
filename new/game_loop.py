@@ -63,9 +63,9 @@ class GameSession:
 
         # Get or create new context
         if new_game:
-            self.initialize_context()
+            self.context = self.author.new_story()
         else:
-            self.db_ops.load_game(self.game_id)
+            self.context = self.db_ops.load_game(self.game_id)
 
     # -- MAIN GAME METHODS --
     async def game_loop(self):
@@ -97,6 +97,7 @@ class GameSession:
         mood = await self.mood.analyze_mood(current_story)
         music = await self.sound.fetch_music(mood)
         speech = await self.sound.generate_speech(current_story)
+
         return {
             "story": current_story,
             "image": image,
@@ -111,15 +112,8 @@ class GameSession:
     async def take_user_input(self):
         """Takes user input and stores to context"""
         # Could we just wait here until an endpoint is pinged and then return that??
-
         # take user input
         # self.context["action"] = user_input
         pass
 
     # -- GET/POST RELATED METHODS --
-
-    async def initialize_context(self):
-        """Prompts the user to fill out the context dict"""
-
-        context = {}
-        self.context = context

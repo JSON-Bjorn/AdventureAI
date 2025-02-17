@@ -1,6 +1,7 @@
 """This file could hold all of the agents"""
 
 from typing import Dict
+import requests
 
 
 class TriageAgent:
@@ -33,7 +34,7 @@ class TriageAgent:
 
 
 class AuthorAgent:
-    """Writes the story"""
+    """Handles story generation"""
 
     async def generate_story(self, context: Dict):
         """Makes an API call to generate a new story"""
@@ -47,7 +48,7 @@ class AuthorAgent:
 
 
 class CompressorAgent:
-    """Compresses the context"""
+    """Handles context compression"""
 
     async def compress_context(self, context: Dict):
         """Takes the game session context and compresses it"""
@@ -67,7 +68,7 @@ class CompressorAgent:
 
 
 class MoodAnalyzer:
-    """Determines the mood of the story"""
+    """Handles mood analysis"""
 
     async def analyze_mood(self):
         """Analyzes the mood of the story"""
@@ -75,7 +76,7 @@ class MoodAnalyzer:
 
 
 class DiceRoller:
-    """Determines if a dice roll is needed and how high"""
+    """Handles dice rolls"""
 
     async def determine_dice_roll(self, story: str):
         """Determines if a dice roll is needed and how high"""
@@ -88,7 +89,7 @@ class DiceRoller:
 
 
 class PromptAgent:
-    """Creates a prompt for the image agent"""
+    """Handles prompt optimization"""
 
     async def generate_prompt(self):
         """Generates a prompt for the image agent"""
@@ -96,20 +97,43 @@ class PromptAgent:
 
 
 class ImageAgent:
-    """Generates an image based on a prompt"""
+    """Handles image generation"""
 
-    async def generate_image(self):
-        """Generates an image based on a prompt"""
-        pass
+    def __init__(self) -> None:
+        self.endpoint = "http://localhost:8000/generate"
+
+    async def generate_image(self, prompt: str):
+        """
+        Pings the /generate endpoint of the Stable Diffusion API
+
+        Args:
+        prompt: The prompt for image generation
+            This string has gone through prompt optimization already
+
+        Returns:
+        byte64_image: The image in base64 format
+            This is decoded in the frontend!!
+        """
+        try:
+            response = requests.get(f"{self.endpoint}?prompt={prompt}")
+            if response.status_code == 200:
+                byte64_image = response.json()["image"]
+                return byte64_image
+            else:
+                print(f"Error generating image: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"Error generating image: {e}")
+            return None
 
 
 class SoundAgent:
-    """Generates a speech based on a text"""
+    """Handles everything sound-related"""
 
     async def generate_speech(self):
-        """Generates a speech based on a text"""
+        """Generates speech based on text"""
         pass
 
     async def fetch_music(self, mood: str):
-        """Fetches a music from the database"""
+        """Fetches music from the database"""
         pass
