@@ -1,13 +1,13 @@
+"""
+Simulates image generation in the game loop.
+Opens up the image in a new window.
+"""
+
 from src.generative_apis import ImageGeneration
 from PIL import Image
 import asyncio
 import base64
 from io import BytesIO
-
-"""
-This file is used to test the image generation API.
-Make sure the server is running before running this file.
-"""
 
 
 async def main():

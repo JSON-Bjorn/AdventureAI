@@ -1,3 +1,8 @@
+"""
+Simulates the generate_story in game loop.
+Displays output in terminal.
+"""
+
 from src.api.generative_apis import TextGeneration
 import asyncio
 

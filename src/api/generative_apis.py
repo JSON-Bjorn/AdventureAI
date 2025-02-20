@@ -7,6 +7,7 @@ import os
 
 # Internal imports
 import json
+# from src.game.game_functionality import
 
 
 class TextGeneration:
@@ -20,11 +21,15 @@ class TextGeneration:
         # Set the endpoint
         self.endpoint = "http://localhost:8000/"
 
-    async def _mistral_call(self, prompt: Dict | str):
+        # List for previous stories
+        self.previous_stories = []
+
+    async def _mistral_call(self, prompt: Dict | str, max_tokens: int = 100):
         """Makes a call to the mistral model"""
         try:
             response = requests.post(
-                f"{self.endpoint}generate", json={"prompt": prompt}
+                f"{self.endpoint}generate",
+                json={"prompt": prompt, "max_tokens": max_tokens},
             )
             if response.status_code == 200:
                 return response.json()["text"]
@@ -38,25 +43,30 @@ class TextGeneration:
     async def generate_story(self, context: Dict):
         """Generated a new story based on the context"""
         # Format the prompt for story generation
-        formatted_prompt = f"""Instructions: {self.instructions['generate_story']}
+        formatted_prompt = f"""
+            Instructions: {self.instructions['generate_story']}
 
-Protagonist: {context['protagonist_name']}
-Inventory: {', '.join(context['inventory'])}
+            Protagonist: {context['protagonist_name']}
+            Inventory: {', '.join(context['inventory'])}
 
-Previous scenes:
-"""
+            Previous scenes:
+            """
         # Add scenes in sequence, current scene will be the last one
         for scene in context["previous_scenes"]:
             formatted_prompt += f"- Story: {scene['story']}\n"
-            formatted_prompt += f"  Action: {scene['action']}\n\n"
+            formatted_prompt += f"  Protagonist action: {scene['action']}\n\n"
+            formatted_prompt += f"  Acton success: {context['current_scene']['dice_success']}\n\n"
 
         # Add current scene
         formatted_prompt += f"- Story: {context['current_scene']['story']}\n"
         formatted_prompt += (
-            f"  Action: {context['current_scene']['action']}\n\n"
+            f"Protagonist action: {context['current_scene']['action']}\n\n"
+        )
+        formatted_prompt += (
+            f"Action success: {context['current_scene']['dice_success']}\n\n"
         )
 
-        # Print the exact prompt being sent
+        # Print statement for clarity during development
         print("\nSending this prompt to API:")
         print("=" * 50)
         print(formatted_prompt)
@@ -66,17 +76,10 @@ Previous scenes:
         next_story = await self._mistral_call(formatted_prompt)
         return next_story
 
-    async def new_story(self):
-        """Makes an API call to generate a new story"""
-        # Ask for stuff about the user.
-        # Create the full context dict (example in game loop)
-        # Call the generate_story method
-        pass
-
     async def generate_prompt(self, context: Dict):
         """Generates a prompt for the image agent"""
         # Boilerplate code
-        current_scene = context["current_story"]
+        current_scene = context["current_scene"]["story"]
         prompt = await self._mistral_call(current_scene)
         return prompt
 
@@ -95,13 +98,19 @@ Previous scenes:
         """
         # Dissect context and get instructions
         instructions = self.instructions["determine_dice_roll"]
-        scene = {
-            "current_scene": context["story"],
-            "protagonist_action": context["action"],
-        }
+        story = context["current_scene"]["story"]
+        action = context["current_scene"]["action"]
+
+        prompt = f"""
+            Instructions: {instructions}
+
+            Story: {story}
+            Action: {action}
+        """
 
         # API call
-        threshhold = await self._mistral_call(instructions, scene)
+        print("Making call to determine dice roll")
+        threshhold = await self._mistral_call(prompt, 5)
         return threshhold
 
     async def analyze_mood(self, context: Dict):
@@ -146,7 +155,8 @@ Previous scenes:
 
         # Remove the oldest story if there are more than 10
         if len(context["story"]["previous"]) > 10:
-            context["story"]["previous"].pop(0)
+            oldest_story = context["story"]["previous"].pop(0)
+            self.previous_stories.append(oldest_story)
 
         # Clear the current story
         for key, value in context["story"]["current"].items():
@@ -164,12 +174,8 @@ class ImageGeneration:
     """Everything image-related"""
 
     def __init__(self) -> None:
-        # Load the instructions
-        with open("instructions.json", "r") as f:
-            self.instructions = json.load(f)
-
         # The endpoint for the image generation API
-        self.endpoint = "http://localhost:8000/generate"
+        self.endpoint = "http://localhost:8001/generate"
 
     async def stable_diffusion_call(self, prompt: str):
         """
