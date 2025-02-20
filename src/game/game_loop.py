@@ -108,7 +108,10 @@ class GameSession:
         """Builds the current scene"""
         current_story = self.context["story"][
             "current"
-        ] = await self.text.generate_story(self.context)
+        ] = await self.text.generate_story(
+            self.context
+        )  # What are we sending out here?
+        # It should be self.context["previous_scenes"] if current scene is empty
         prompt = await self.text.generate_prompt(self.context)
         image = await self.image.stable_diffusion_call(prompt)
         mood = await self.text.analyze_mood(current_story)

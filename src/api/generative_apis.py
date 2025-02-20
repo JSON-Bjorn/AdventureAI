@@ -3,6 +3,7 @@
 # External imports
 from typing import Dict
 import requests
+import os
 
 # Internal imports
 import json
@@ -13,17 +14,56 @@ class TextGeneration:
 
     def __init__(self) -> None:
         # Load the instructions
-        with open("instructions.json", "r") as f:
+        with open("src/api/instructions.json", "r") as f:
             self.instructions = json.load(f)
 
-    async def _mistral_call(self, instructions: str, prompt: str):
+        # Set the endpoint
+        self.endpoint = "http://localhost:8000/"
+
+    async def _mistral_call(self, prompt: Dict | str):
         """Makes a call to the mistral model"""
-        pass
+        try:
+            response = requests.post(
+                f"{self.endpoint}generate", json={"prompt": prompt}
+            )
+            if response.status_code == 200:
+                return response.json()["text"]
+            else:
+                print(f"Error: Received status code {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"Error generating text: {e}")
+            return None
 
     async def generate_story(self, context: Dict):
         """Generated a new story based on the context"""
-        # Boilerplate code
-        next_story = await self._mistral_call(context)
+        # Format the prompt for story generation
+        formatted_prompt = f"""Instructions: {self.instructions['generate_story']}
+
+Protagonist: {context['protagonist_name']}
+Inventory: {', '.join(context['inventory'])}
+
+Previous scenes:
+"""
+        # Add scenes in sequence, current scene will be the last one
+        for scene in context["previous_scenes"]:
+            formatted_prompt += f"- Story: {scene['story']}\n"
+            formatted_prompt += f"  Action: {scene['action']}\n\n"
+
+        # Add current scene
+        formatted_prompt += f"- Story: {context['current_scene']['story']}\n"
+        formatted_prompt += (
+            f"  Action: {context['current_scene']['action']}\n\n"
+        )
+
+        # Print the exact prompt being sent
+        print("\nSending this prompt to API:")
+        print("=" * 50)
+        print(formatted_prompt)
+        print("=" * 50 + "\n")
+
+        # Make the call with formatted prompt
+        next_story = await self._mistral_call(formatted_prompt)
         return next_story
 
     async def new_story(self):

@@ -1,6 +1,9 @@
 """
 Holds generic game functinality that does not
 need to be in game loop or doesnt rely on API.
+
+I also put stuff here that i dont know where we should put it.
+Sorry future us.
 """
 
 import random
