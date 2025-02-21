@@ -3,18 +3,15 @@ import asyncio
 import uuid
 from typing import Optional, List, Dict
 from io import BytesIO
+import pprint
 
 from src.api.generative_apis import (
     TextGeneration,
     ImageGeneration,
     SoundGeneration,
 )
-from src.game.game_functionality import (
-    roll_dice,
-    render_scene,
-    take_user_input,
-    gather_new_user_information,
-)
+from src.game.game_functionality import GameFunctionality
+from src.game.context_manager import ContextManager
 # from src.database.database_operations import DatabaseOperations
 
 
@@ -24,35 +21,11 @@ class GameSession:
         # self.db_ops = DatabaseOperations()
 
         # User and gameplay data
-        self.game_active = True
-        self.user_id = user_id
-        self.current_image = None
-        self.current_mood = None
-        self.current_audio = None
-        self.current_story = None
-        # If everything goes right, Linus should never be the protagonist
-        self.context = {
-            "protagonist_name": "Linus Torvalds",
-            "inventory": ["Materialized Linux kernel"],
-            "current_scene": {
-                "story": "Linus Torvalds has trancended into godhood!",
-                "action": "git push AGI to public repo",
-                "dice_threshhold": None,
-                "dice_success": None,
-            },
-            "previous_scenes": [
-                {
-                    "story": "Linus is coding",
-                    "action": "I trancend into godhood",
-                    "dice_threshhold": 20,
-                    "dice_success": True,
-                },
-            ],
-            "mood": {
-                1: "calm",
-                2: "adventerous",
-            },
-        }
+        self.context = {}
+
+        # Functionality classes
+        self.context_manager = ContextManager()
+        self.game_functionality = GameFunctionality()
 
         # APIs
         self.text = TextGeneration()
@@ -61,7 +34,9 @@ class GameSession:
 
         # Get or create new context
         if new_game:
-            self.context = gather_new_user_information()
+            self.context = (
+                self.game_functionality.gather_new_user_information()
+            )
         else:
             self.context = self.db_ops.load_game(self.user_id)
 
@@ -69,52 +44,55 @@ class GameSession:
     async def game_loop(self):
         """Main game loop"""
         while self.game_active is True:
-            # Check if game is over
-            if self.game_active is False:
-                break
+            print_context_state(self.context)  # DEBUG
 
-            # Take user input and add to context
-            self.context["current_scene"]["action"] = await take_user_input()
-
-            # Determine dice roll threshhold and add to context
-            dice_threshhold = await self.text.determine_dice_roll(
-                self.context
-            )
-            self.context["current_scene"]["dice_threshhold"] = dice_threshhold
-            print(f"RAW OUTPUT OF dice_threshhold: {dice_threshhold}")
-
-            # Roll the dice and add to context
-            # This needs to be done when user clicks button
-            self.context["current_scene"]["dice_success"] = roll_dice(
-                self.context["current_scene"]["dice_threshhold"]
+            # Define the CURRENT action
+            self.context = await self.game_functionality.take_user_input(
+                context=self.context
             )
 
-            # Below here in prod lol
+            print_context_state(self.context)  # DEBUG
 
-            # Generate current scene
-            scene = await self.build_current_scene()
-            await self.render_scene(self, scene)
-            self.context = await self.update_context(scene)
+            # Define the CURRENT dice roll (threshold and success)
+            self.context = await self.context_manager.handle_dice_roll(
+                context=self.context
+            )
+            # CURRENT SCENE IS NOW COMPLETE
 
-            # Compress the context
-            self.context = self.text.compress_context(self.context)
+            # Move CURRENT to PREVIOUS
+            self.context = (
+                await self.context_manager.append_to_previous_stories(
+                    context=self.context
+                )
+            )
 
-            # Clear the current scene
-            self.context["current_scene"] = {}
+            print_context_state(self.context)  # DEBUG
 
-    async def build_current_scene(self):
-        """Builds the current scene"""
-        current_story = await self.text.generate_story(self.context)
-        img_prompt = await self.text.generate_prompt(self.context)
-        image = await self.image.stable_diffusion_call(img_prompt)
-        # mood = await self.text.analyze_mood(current_story)
-        # music = await self.sound.fetch_music(mood)
-        # speech = await self.sound.generate_speech(current_story)
+            # Define the NEW scene
+            scene = await self.context_manager.build_current_scene(
+                context=self.context
+            )
+            await self.game_functionality.render_scene(scene)
 
-        return {
-            "story": current_story,
-            "image": image,
-            "mood": None,
-            "music": None,
-            "speech": None,
-        }
+            # Compress the CURRENT story
+            self.context = await self.text.compress_current_story(
+                context=self.context
+            )
+
+            print_context_state(self.context)  # DEBUG
+
+    async def game_loop_2(self):
+        """Main game loop"""
+        self.context = self.game_functionality.pick_initial_story()
+        while self.game_active is True:
+            # Generate story from context
+            await self.image.generate_image(self.context)
+            await self.game_functionality.render_scene(self.context)
+
+
+# THIS IS OUTSIDE OF CLASS
+def print_context_state(context: Dict):
+    """I dont know how to use the debugger"""
+    print("\n" + "=-" * 10 + " CONTEXT STATE " + "=-" * 10)
+    pprint.pprint(f"Current context state: {context}")
+    print("=-" * 10 + " CONTEXT STATE " + "=-" * 10 + "\n")
