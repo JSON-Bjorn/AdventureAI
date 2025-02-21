@@ -11,7 +11,7 @@ from src.api.generative_apis import (
     SoundGeneration,
 )
 from src.game.game_functionality import GameFunctionality
-from src.game.context_manager import ContextManager
+from src.game.context_manager import GameContextManager
 # from src.database.database_operations import DatabaseOperations
 
 
@@ -24,8 +24,7 @@ class GameSession:
         self.context = {}
 
         # Functionality classes
-        self.context_manager = ContextManager()
-        self.game_functionality = GameFunctionality()
+        self.manager = GameContextManager()
 
         # APIs
         self.text = TextGeneration()
@@ -34,60 +33,78 @@ class GameSession:
 
         # Get or create new context
         if new_game:
-            self.context = (
-                self.game_functionality.gather_new_user_information()
-            )
+            self.context = self.manager.pick_initial_story()
         else:
             self.context = self.db_ops.load_game(self.user_id)
 
     # -- MAIN GAME METHODS --
+
     async def game_loop(self):
         """Main game loop"""
-        while self.game_active is True:
-            print_context_state(self.context)  # DEBUG
+        game_active = True
+        while game_active is True:
+            pass
+            # Story already exists in context/current scene
+            # Generate image, put it in current scene
+            self.context = await self.manager.generate_image(self.context)
+            # Also here is where we need to get tts, the music and so on..
 
-            # Define the CURRENT action
-            self.context = await self.game_functionality.take_user_input(
-                context=self.context
-            )
+            # Render current scene
+            await self.manager.render_scene(self.context)
 
-            print_context_state(self.context)  # DEBUG
+            # Move current scene to previous
+            self.context = await self.manager.move_scenes(self.context)
 
-            # Define the CURRENT dice roll (threshold and success)
-            self.context = await self.context_manager.handle_dice_roll(
-                context=self.context
-            )
-            # CURRENT SCENE IS NOW COMPLETE
+            # Take user input, add to current scene
+            self.context = await self.manager.take_user_input(self.context)
 
-            # Move CURRENT to PREVIOUS
-            self.context = (
-                await self.context_manager.append_to_previous_stories(
-                    context=self.context
-                )
-            )
+            # Roll dice, add to current scene
+            self.context = await self.manager.handle_dice_roll(self.context)
 
-            print_context_state(self.context)  # DEBUG
+            # Generate story, add to current scene
+            self.context = await self.manager.generate_new_story(self.context)
 
-            # Define the NEW scene
-            scene = await self.context_manager.build_current_scene(
-                context=self.context
-            )
-            await self.game_functionality.render_scene(scene)
+            # Safety break
+            input("Iteration over...")
+            game_active = False
 
-            # Compress the CURRENT story
-            self.context = await self.text.compress_current_story(
-                context=self.context
-            )
+    # async def old_game_loop(self):
+    #     """Main game loop"""
+    #     while self.game_active is True:
+    #         print_context_state(self.context)  # DEBUG
 
-            print_context_state(self.context)  # DEBUG
+    #         # Define the CURRENT action
+    #         self.context = await self.game_functionality.take_user_input(
+    #             context=self.context
+    #         )
 
-    async def game_loop_2(self):
-        """Main game loop"""
-        self.context = self.game_functionality.pick_initial_story()
-        while self.game_active is True:
-            # Generate story from context
-            await self.image.generate_image(self.context)
-            await self.game_functionality.render_scene(self.context)
+    #         print_context_state(self.context)  # DEBUG
+
+    #         # Define the CURRENT dice roll (threshold and success)
+    #         self.context = await self.manager.handle_dice_roll(
+    #             context=self.context
+    #         )
+    #         # CURRENT SCENE IS NOW COMPLETE
+
+    #         # Move CURRENT to PREVIOUS
+    #         self.context = await self.manager.append_to_previous_stories(
+    #             context=self.context
+    #         )
+
+    #         print_context_state(self.context)  # DEBUG
+
+    #         # Define the NEW scene
+    #         scene = await self.manager.build_current_scene(
+    #             context=self.context
+    #         )
+    #         await self.game_functionality.render_scene(scene)
+
+    #         # Compress the CURRENT story
+    #         self.context = await self.text.compress_current_story(
+    #             context=self.context
+    #         )
+
+    #         print_context_state(self.context)  # DEBUG
 
 
 # THIS IS OUTSIDE OF CLASS

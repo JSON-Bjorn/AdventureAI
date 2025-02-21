@@ -46,7 +46,7 @@ class TextGeneration:
             return None
 
     async def generate_story(self, context: Dict):
-        """Generated a new story based on the context"""
+        """Builds the prompt and calls the mistral model for a new story"""
         # Format the prompt for story generation
         print("generate_story - method called")
         # Define variables
@@ -130,7 +130,7 @@ class TextGeneration:
 
         return img_prompt
 
-    async def determine_dice_roll(self, context: str):
+    async def determine_dice_threshold(self, story, action):
         """
         Uses mistral API to determine if we need a dice roll
         and what the threshold should be.
@@ -145,8 +145,6 @@ class TextGeneration:
         """
         # Dissect context and get instructions
         instructions = self.instructions["determine_dice_roll"]
-        story = context["current_scene"]["story"]
-        action = context["current_scene"]["action"]
 
         prompt = f"""
             Instructions: {instructions}
@@ -179,7 +177,7 @@ class TextGeneration:
         mood = await self._mistral_call(prompt)
         return mood
 
-    async def compress_current_story(self, context: Dict):
+    async def compress_current_story(self, story: str):
         """
         Compresses the current story and action
         Adds the compressed story and action to the previous stories
@@ -194,7 +192,6 @@ class TextGeneration:
         """
         # Dissect context and get instructions
         instructions = self.instructions["compress_context"]
-        story = context["current_scene"]["story"]
 
         prompt = f"""
             Instructions: {instructions}
@@ -215,10 +212,7 @@ class TextGeneration:
         print(f"{GREEN}Compressed story:{RESET}\n{compressed_story}\n")
         print("=" * 50)
 
-        # Replace the full CURRENT story with the compressed one
-        context["current_scene"]["story"] = compressed_story
-
-        return context
+        return compressed_story
 
     async def _compress_story(self, story: str):
         """Makes an API call to the mistral model to compress the story"""
