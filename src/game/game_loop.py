@@ -58,15 +58,15 @@ class GameSession:
             # Take user input, add to current scene
             self.context = await self.manager.take_user_input(self.context)
 
+            # Check for exit command
+            if self.context["current_scene"]["action"] == "quit":
+                game_active = False
+
             # Roll dice, add to current scene
             self.context = await self.manager.handle_dice_roll(self.context)
 
             # Generate story, add to current scene
             self.context = await self.manager.generate_new_story(self.context)
-
-            # Safety break
-            input("Iteration over...")
-            game_active = False
 
     # async def old_game_loop(self):
     #     """Main game loop"""

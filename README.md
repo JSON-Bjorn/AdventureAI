@@ -2,21 +2,15 @@ Jag håller på att skriva om backend i på denna branch.
 
 # Progress
 ### Current
-Mistral och SD funkar bra med test filerna.
-Har gjort en test_game_loop.py där vi testar köra game loop och rendera i temrinalen
-Kommer till bildgenereringen. Vi får 200ok från API.
+Gmae loop funkar från test_game_loop.py
+Kontexten är fucked och inget stämmer, men vi får inga errors.
 
 
 ### Next
-Fortsätt emd game loop test.
-Skriv en instruction för prompt generring innan vi anropar sd api.
-Senaste error som jag inte orkade titta på: 
-```bash
-  File "C:\Users\Felix\Desktop\Code\Egna projekt\AdventureAI - Full project\backend\src\game\game_loop.py", line 96, in game_loop
-    await self.render_scene(self, scene)
-          ^^^^^^^^^^^^^^^^^
-AttributeError: 'GameSession' object has no attribute 'render_scene'
-```
+Fortsätt med game loop test.
+- Lista ut varför kontext är helt jumbled.
+- Titta främst på vad vi skickar in till API call
+- Kolla även en gång till på hur vi flyttar current till previous
 
 
 # The new flow

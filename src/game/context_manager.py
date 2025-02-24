@@ -222,15 +222,22 @@ class GameContextManager:
         Compresses most previous story
         Moves oldest story to instance variable if there are more than 10.
         """
+        # Get current scene subset
+        current_scene_subset = {
+            "story": context["current_scene"]["story"],
+            "action": context["current_scene"]["action"],
+            "dice_success": context["current_scene"]["dice_success"],
+        }
+
         # Move current to previous
-        context["previous_scenes"].append(context["current_scene"])
+        context["previous_scenes"].append(current_scene_subset)
 
         # Empty current scene
         for key, value in context["current_scene"].items():
             context["current_scene"][key] = None
 
         # Compress most previous story
-        context = self.compress_previous_story(context)
+        context = await self.compress_previous_story(context)
 
         # Move scenes that are older than 10 to instance variable
         if len(context["previous_scenes"]) > 10:
@@ -272,14 +279,19 @@ class GameContextManager:
         action = context["current_scene"]["action"]
         llm_output = await self.text.determine_dice_threshold(story, action)
 
-        # Typecast threshold into int
-        dice_threshold = self.convert_dice_threshold_to_int(llm_output)
+        # Typecast threshold
+        dice_threshold: int = await self.convert_dice_threshold_to_int(
+            llm_output
+        )
 
         # Roll dice
-        dice_success = self.roll_dice(dice_threshold)
+        dice_success: bool = random.randint(1, 20) >= dice_threshold
 
         # Add dice_threshold and dice_success to context
         context["current_scene"]["dice_threshold"] = dice_threshold
+        context["current_scene"]["dice_success"] = dice_success
+
+        return context
 
     async def convert_dice_threshold_to_int(self, llm_output: str) -> int:
         """
@@ -287,15 +299,15 @@ class GameContextManager:
         representing the dice threshold for a player action.
         """
         # Replaces any non digit characters with an empty string
-        threshold_str = re.sub(r"[^0-9]", "", str(llm_output))
+        threshold: str = re.sub(r"[^0-9]", "", str(llm_output))
 
         # Lets give them a free pass if the LLM fucks up and doesnt give a number.
-        if threshold_str == "":
+        if threshold == "":
             print("Giving free pass")
             threshold = 0
 
         # Typecast threshold into an int
-        threshold = int(threshold_str)
+        threshold: int = int(threshold)
 
         # Make sure the threshold is not greater than 20
         if threshold > 20:
@@ -303,11 +315,6 @@ class GameContextManager:
 
         # Return the threshold
         return threshold
-
-    def roll_dice(self, threshold: int) -> bool:
-        """Rolls the dice"""
-        roll = random.randint(1, 20)
-        return roll >= threshold
 
     async def generate_new_story(self, context: Dict):
         """Generates a new story"""

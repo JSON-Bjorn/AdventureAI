@@ -177,15 +177,12 @@ class TextGeneration:
         mood = await self._mistral_call(prompt)
         return mood
 
-    async def compress_current_story(self, story: str):
+    async def compress_story(self, story: str):
         """
-        Compresses the current story and action
-        Adds the compressed story and action to the previous stories
-        Removes the oldest story if there are more than 10
-        Clears the current story
+        Compresses a story
 
         Args:
-        context: The context to compress
+        story: The story to compress
 
         Returns:
         The updated context
@@ -213,10 +210,6 @@ class TextGeneration:
         print("=" * 50)
 
         return compressed_story
-
-    async def _compress_story(self, story: str):
-        """Makes an API call to the mistral model to compress the story"""
-        return "I do a backflip"
 
 
 class ImageGeneration:
