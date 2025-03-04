@@ -44,45 +44,47 @@ class GameSession:
         """Main game loop"""
         game_active = True
         while game_active is True:
-            # Story already exists in context/current scene
-            # Generate image, put it in current scene
+            # 1. Generate new story based on the previous action
+            # (Skip on first iteration since we already have initial story)
+            if self.context["current_scene"]["action"] is not None:
+                self.context = await self.manager.generate_new_story(
+                    self.context
+                )
+                print_context_state(self.context)
+
+                # 2. Move completed scene to previous_scenes
+                # (Do this right after generating new story)
+                self.context = await self.manager.move_scenes(self.context)
+                print_context_state(self.context)
+
+            # 3. Generate image for the current story
             self.context = await self.manager.generate_image(self.context)
-            # Also here is where we need to get tts, the music and so on..
             print_context_state(self.context)
 
-            # Render current scene
+            # 4. Render the current scene (story + image)
             await self.manager.render_scene(self.context)
             print_context_state(self.context)
 
-            # Move current scene to previous
-            self.context = await self.manager.move_scenes(self.context)
-            print_context_state(self.context)
-
-            # Take user input, add to current scene
+            # 5. Take user input (action) in response to the story
             self.context = await self.manager.take_user_input(self.context)
             print_context_state(self.context)
 
             # Check for exit command
             if self.context["current_scene"]["action"] == "quit":
                 game_active = False
-            print_context_state(self.context)
+                break
 
-            # Roll dice, add to current scene
+            # 6. Handle dice roll if needed for the action
             self.context = await self.manager.handle_dice_roll(self.context)
-            print_context_state(self.context)
-
-            # Generate story, add to current scene
-            self.context = await self.manager.generate_new_story(self.context)
             print_context_state(self.context)
 
 
 # THIS IS OUTSIDE OF CLASS
 def print_context_state(context: Dict):
-    """I dont know how to use the debugger"""
+    """Debug helper to print current context state"""
     debug_context = copy.deepcopy(context)
-    debug_context["current_scene"]["image"] = (
-        "BING BONG CHING CHONG mvh deepseek AB"
-    )
+    if "image" in debug_context["current_scene"]:
+        debug_context["current_scene"]["image"] = "[BASE64 IMAGE DATA]"
     print("\n" + "=-" * 10 + " CONTEXT STATE " + "=-" * 10)
-    pprint.pprint(f"Current context state: {debug_context}")
+    pprint.pprint(debug_context)
     print("=-" * 10 + " CONTEXT STATE " + "=-" * 10 + "\n")

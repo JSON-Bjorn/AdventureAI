@@ -17,11 +17,11 @@ instructions = {
         CORRECT OUTPUT EXAMPLE: 
         \"The smoke curls around the bathroom stall as you inhale deeply. A knock on the door startles you. Through the gap beneath the door, you spot security guard shoes. Your heart races.\"\\n\\n
         INCORRECT OUTPUT EXAMPLES: 
-        \"- Story: The smoke curls around the bathroom stall...\" 
-        \"- Action: You decide to flush the joint...\" 
+        \"- Story 2: The smoke curls around the bathroom stall...\" 
+        \"- Protagonist's action: You decide to flush the joint...\" 
         Note that: 
         - The \"Story\" entries are previous narrative segments. This is what YOU (ai) are writing! 
-        - The \"Action\" entries are what the HUMAN (protagonist) chose to do based on your story. 
+        - The \"Action\" entries are what the protagonist (human) chose to do based on the story. 
         - Events are listed chronologically from oldest (top) to most recent (bottom) 
         Remember: You ONLY write what happens next in the story without any prefixes. The player will decide their own action.
         """,

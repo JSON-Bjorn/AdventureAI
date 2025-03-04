@@ -2,25 +2,25 @@ context = {
     "protagonist_name": "Felix",
     "inventory": ["Linux kernel, a glock 19"],
     "current_scene": {
-        "story": None,
-        "action": "I run to bathroom",
+        "story": "Current scene scene",
+        "action": "Current action action",
     },
     "previous_scenes": [
         {
-            "story": "Felix codes",
-            "action": None,
+            "story": "This happens first",
+            "action": "User chose this first",
         },
         {
-            "story": "Felix breaks keyboard",
-            "action": "I hit keyboard",
+            "story": "This happened second",
+            "action": "User chose this second",
         },
         {
-            "story": "Felix cleans",
-            "action": "I pick up the pieces",
+            "story": "This happened third",
+            "action": "User chose this third",
         },
         {
-            "story": "Felix Tummy hurts",
-            "action": "I eat the pieces",
+            "story": "This happened fourth",
+            "action": "User chose this fourth",
         },
     ],
 }

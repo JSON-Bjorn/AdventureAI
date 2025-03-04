@@ -4,6 +4,7 @@
 from typing import Dict, List
 import requests
 import os
+from openai import OpenAI
 
 # Internal imports
 import json
@@ -29,8 +30,25 @@ class TextGeneration:
         # List for previous stories
         self.previous_stories = []
 
-    async def _mistral_call(self, prompt: Dict | str, max_tokens: int = 100):
+        # OPENAI because mistral is slow as fuck
+        self.openai = OpenAI()
+
+    async def _mistral_call(self, prompt: str, max_tokens: int = 1000):
+        """Makes a call to the OpenAI API"""
+        try:
+            response = self.openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"Error in OpenAI API call: {str(e)}")
+
+    async def __mistral_call(self, prompt: str, max_tokens: int = 100):
         """Makes a call to the mistral model"""
+        """CURRENTLY NOT ACTIVE (see double underscore and method above)"""
         try:
             response = requests.post(
                 f"{self.endpoint}generate",
@@ -47,41 +65,32 @@ class TextGeneration:
 
     async def generate_story(self, context: Dict):
         """Builds the prompt and calls the mistral model for a new story"""
-        # Format the prompt for story generation
         print("generate_story - method called")
+
         # Define variables
         instructions: str = self.instructions["generate_story"]
         protagonist_name: str = context["protagonist_name"]
         inventory: str = ", ".join(context["inventory"])
         previous_scenes: List[Dict] = context["previous_scenes"]
-        current_scene: Dict = context["current_scene"]
+        current_action = context["current_scene"]["action"]
+        action_success = context["current_scene"]["dice_success"]
 
         # Format the prompt
         formatted_prompt = f"""
     Instructions: {instructions}
-
     Protagonist: {protagonist_name}
     Inventory: {inventory}
 
-    Previous scenes:
+    The story so far:
     """
-        # Loop through previous scenes and add to formatted_prompt
-        for i in range(10):
-            try:
-                formatted_prompt += f"Story: {previous_scenes[i]['story']}\n"
-                formatted_prompt += (
-                    f"Action: {previous_scenes[i+1]['action']}\n\n"
-                )
-                formatted_prompt += f"Action successful: {previous_scenes[i+1]['dice_success']}\n"
-            except IndexError:
-                break
+        # Add all previous stories in chronological order
+        for i, scene in enumerate(previous_scenes, 1):
+            formatted_prompt += f"Story {i}: {scene['story']}\n\n"
 
-        # Add the current scene to the formatted prompt
-        formatted_prompt += f"Action: {current_scene['action']}\n\n"
-        formatted_prompt += (
-            f"Action successful: {current_scene['dice_success']}\n"
-        )
-        formatted_prompt += "Story: Next story goes here.\n\n"
+        # Add the current action and its success (this is what we're generating a story for)
+        formatted_prompt += f"Protagonist's action based on Story {len(previous_scenes)}: {current_action}\n"
+        formatted_prompt += f"Action successful: {action_success}\n\n"
+        formatted_prompt += f"Story {len(previous_scenes) + 1}: Please write this story based on the previous ones.\n\n"
 
         # PRINT DEBUGGING
         print("=" * 50)
@@ -104,14 +113,15 @@ class TextGeneration:
         """Generates a prompt for the image agent"""
         print("generate_prompt - method called")
 
-        current_scene = context["current_scene"]["story"]
+        # Get the most recent story from previous_scenes
+        current_story = context["previous_scenes"][-1]["story"]
 
         instructions = self.instructions["generate_prompt"]
         formatted_prompt = f"""
             Instructions: {instructions}
 
-            Story: {current_scene}
-            Action: {context["current_scene"]["action"]}
+            Story: {current_story}
+            Protagonist's action: {context["current_scene"]["action"]}
         """
 
         # Debugging prints
