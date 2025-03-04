@@ -58,29 +58,30 @@ class TextGeneration:
 
         # Format the prompt
         formatted_prompt = f"""
-            Instructions: {instructions}
+    Instructions: {instructions}
 
-            Protagonist: {protagonist_name}
-            Inventory: {inventory}
+    Protagonist: {protagonist_name}
+    Inventory: {inventory}
 
-            Previous scenes:
-            """
-        # Add scenes in sequence, current scene will be the last one
-        for scene in previous_scenes:
-            formatted_prompt += f"- Story: {scene['story']}\n"
-            formatted_prompt += f"  Protagonist action: {scene['action']}\n\n"
-            formatted_prompt += (
-                f"  Action successful: {scene['dice_success']}\n\n"
-            )
+    Previous scenes:
+    """
+        # Loop through previous scenes and add to formatted_prompt
+        for i in range(10):
+            try:
+                formatted_prompt += f"Story: {previous_scenes[i]['story']}\n"
+                formatted_prompt += (
+                    f"Action: {previous_scenes[i+1]['action']}\n\n"
+                )
+                formatted_prompt += f"Action successful: {previous_scenes[i+1]['dice_success']}\n"
+            except IndexError:
+                break
 
-        # Add current scene
-        formatted_prompt += f"- Story: {current_scene['story']}\n"
+        # Add the current scene to the formatted prompt
+        formatted_prompt += f"Action: {current_scene['action']}\n\n"
         formatted_prompt += (
-            f"Protagonist action: {current_scene['action']}\n\n"
+            f"Action successful: {current_scene['dice_success']}\n"
         )
-        formatted_prompt += (
-            f"Action successful: {current_scene['dice_success']}\n\n"
-        )
+        formatted_prompt += "Story: Next story goes here.\n\n"
 
         # PRINT DEBUGGING
         print("=" * 50)
