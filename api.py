@@ -1,14 +1,10 @@
-from fastapi import FastAPI, HTTPException
+# External imports
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-import os
-from pydantic import BaseModel
-from typing import Optional, List
-import asyncio
-import time
+from typing import Dict
 
-from .adventureai import AdventureGame
-from .utils import ResourceManager
+# Internal imports
+from src.game.game_loop import GameSession
 
 app = FastAPI()
 app.add_middleware(
@@ -19,7 +15,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # API som påbörjat nytt spel
+@app.post("/start_new_game")
+async def start_new_game(game_session: Dict):
+    game = GameSession()
+    scene = await game.get_next_scene(game_session)
+    return scene
+
+
+@app.post("/save_game")
+async def continue_game(game_session: Dict):
+    game = GameSession()
+    game.save_game(game_session)
+
 
 # API som börjar gammalts spel
 

@@ -25,8 +25,8 @@ instructions = {
         - Events are listed chronologically from oldest (top) to most recent (bottom) 
         Remember: You ONLY write what happens next in the story without any prefixes. The player will decide their own action.
         """,
-    "compress_context": """
-        Summarize the following text into a maximum of 100 characters
+    "compress_story": """
+        Summarize the following text into a maximum of 100 characters while keeping the most important details.
     """,
     "determine_dice_roll": """
         Imagine you are a dungeon master in a dungeons and dragons campaign.
@@ -37,24 +37,63 @@ instructions = {
         - Your answer should never contain any letters.
         - Your answer should never contain any symbols.
     """,
-    "generate_prompt": """
+    "image_prompt": """
         You are an expert at creating image prompts for stable diffusion models.
-        You will recieve a story and an action.
-        The story is what happened first. The action is what the protagonist decided to do.
-        Your job is to rewite this into a prompt that is easy for a stable diffusion model to generate an image.
+        Your job is to extract the most crucial parts of the story and rewite it into a prompt that can be used to generate images using stable diffusion.
 
-        The prompt should linclude the following elements:
-        - The setting (landscapes, cities, etc.)
-        - What is happening in the image (what our protagonist is doing)
+        The prompt should include the following elements:
+        - The setting; Where are we? Whats the mood? Whats the weather?
+        - The actions; What are people doing? What is happening?
 
         The prompt should not include:
         - The entire story
         - Names of the protagonist or other characters
         - Other information not relevant to image generation.
+        - Other information not relevant to the story.
         
         The prompt should be no more than 100 characters.
 
         Example of a good prompt:
-        \"landscape photography, castle in the distance, a knight on a horse\"
+        \"landscape photography, summertime, castle in the distance, a knight on a horse, knight holding a sword\"
+    """,
+    "analyze_mood": """
+        You are an expert at analyzing the mood of a story.
+        Your job is to analyze the mood of the story in two steps.
+        1) Determina a tension-level of the story and select one of the following options:
+            - Calm
+            - Medium
+            - Intense
+            
+        2) Then select a subgenre to the tension-level from the list below:
+            Calm:
+                - Adventerous
+                - Dreamy
+                - Mystical
+                - Serene
+            Medium:
+                - Lurking
+                - Nervous
+                - Ominous
+                - Playful
+                - Quirky
+                - Upbeat
+            Intense:
+                - Chaotic
+                - Combat
+                - Epic
+                - Scary
+
+        Format your answer as follows:
+        'tension-level/subgenre'
+
+        Examples of good answers:
+        'calm/dreamy'
+        'medium/playful'
+        'intense/chaotic'
+
+        Examples of bad answers:
+        'calm/combat'
+        'tension: intense/subgenre: chaotic'
+        'Okay here is the mood: medium/nervous'
     """,
 }
