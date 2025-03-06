@@ -3,7 +3,11 @@ from typing import Dict
 
 class DatabaseOperations:
     def __init__(self):
-        pool = self.connection_pool()
+        pass
+
+    def get_story(self, story_id: str):
+        # Placeholder method
+        return {"story": "You are a cat, chasing a mouse around the house."}
 
     def save_game(self, context: Dict):
         # Post game save to db

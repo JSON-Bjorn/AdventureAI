@@ -1,20 +1,14 @@
 """This file could hold all of the agents"""
 
 # External imports
-from typing import Dict, List
+from typing import Dict
 import requests
 import os
 from openai import OpenAI
+from dotenv import load_dotenv
+from fastapi import HTTPException
 
-# Internal imports
-import json
-
-# from src.game.game_functionality import
 from src.api.instructions import instructions
-
-RED = "\033[31m"
-GREEN = "\033[32m"
-RESET = "\033[0m"
 
 
 class TextGeneration:
@@ -31,7 +25,9 @@ class TextGeneration:
         self.previous_stories = []
 
         # OPENAI because mistral is slow as fuck
-        self.openai = OpenAI()
+        load_dotenv()
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        self.openai = OpenAI(api_key=OPENAI_API_KEY)
 
     async def api_call(self, prompt: str, max_tokens: int = 1000):
         """Using OpenAI because computer slow"""
@@ -44,7 +40,10 @@ class TextGeneration:
             )
             return response.choices[0].message.content
         except Exception as e:
-            print(f"Error in OpenAI API call: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error in OpenAI API call: {str(e)}",
+            )
 
     async def _mistral_call_old(self, prompt: str, max_tokens: int = 100):
         """THIS IS MISTRAL"""
@@ -56,11 +55,15 @@ class TextGeneration:
             if response.status_code == 200:
                 return response.json()["text"]
             else:
-                print(f"Error: Received status code {response.status_code}")
-                return None
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Error: Received status code {response.status_code}",
+                )
         except Exception as e:
-            print(f"Error generating text: {e}")
-            return None
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error generating text: {e}",
+            )
 
     async def analyze_mood(self, context: Dict):
         """Analyzes the mood of the story"""
@@ -94,11 +97,15 @@ class ImageGeneration:
                 byte64_image = response.json()["image"]
                 return byte64_image
             else:
-                print(f"Error generating image: {response.status_code}")
-                return None
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Error: Stable Diffusion API gave status code: {response.status_code}",
+                )
         except Exception as e:
-            print(f"Error generating image: {e}")
-            return None
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error generating image: {e}",
+            )
 
 
 class SoundGeneration:

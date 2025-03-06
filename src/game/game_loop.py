@@ -1,10 +1,4 @@
-import os
-import asyncio
-import uuid
-from typing import Optional, List, Dict, Tuple
-from io import BytesIO
-import pprint
-import copy
+from typing import List, Dict
 
 from src.api.generative_apis import (
     TextGeneration,
@@ -13,6 +7,7 @@ from src.api.generative_apis import (
 )
 from src.game.context_manager import GameContextManager
 from src.database.database_operations import DatabaseOperations
+from src.schemas.schemas import StoryActionSegment, GameSession
 
 
 class GameSession:
@@ -21,47 +16,26 @@ class GameSession:
         self.db_ops = DatabaseOperations()
         self.manager = GameContextManager()
 
-    async def get_next_scene(self, game_session: Dict):
+    async def get_dice_info(self, story: StoryActionSegment):
+        """Rolls the dice and returns the result"""
+        return await self.manager.roll_dice(story)
+
+    async def get_next_scene(self, game_session: GameSession):
         """
         Takes context as input and sends new context as output
         """
-        # Dissect the game session
-        # name = game_session["protagonist_name"]
-        # inv = game_session["inventory"]
-        all_scenes: List[Dict] = game_session["scenes"]
-        recent_scene: Dict[str] = all_scenes[-1]
+        # Builds prompts, makes API calls and generates the new scene
+        story: str = await self.manager.new_story(game_session)
+        compressed_story: str = await self.manager.compress(story)
+        image: str = await self.manager.generate_image(story)
+        music_path: str = await self.manager.analyze_mood(story)
 
-        # Roll dice on players action
-        starting_point = recent_scene.get("starting_point", False)
-        if starting_point is True:
-            dice = (threshold, roll, success) = (0, 1, True)
-        elif starting_point is False:
-            dice = (threshold, roll, success) = await self.manager.roll_dice(
-                recent_scene
-            )
-
-        # Generate a new story and compress it
-        new_story: str = await self.manager.new_story(game_session, dice)
-        compressed_story: str = await self.manager.compress(story=new_story)
-
-        # Image
-        image: str = await self.manager.generate_image(new_story)
-
-        # Mood
-        music_path: str = await self.manager.analyze_mood(new_story)
-
-        # Build the return response
-        return_response = {
-            "story": new_story,
+        return {
+            "story": story,
             "compressed_story": compressed_story,
             "image": image,
             "music": music_path,
-            "dice_threshold": threshold,
-            "dice_success": success,
-            "dice_roll": roll,
         }
-
-        return return_response
 
     async def save_game(self, game_session: Dict):
         """Saves the game to the database"""

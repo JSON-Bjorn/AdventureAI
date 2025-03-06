@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple
 
 # Internal imports
 from src.api.instructions import instructions
+from src.schemas.schemas import StoryActionSegment, GameSession
 
 
 class PromptBuilder:
@@ -10,12 +11,12 @@ class PromptBuilder:
     def __init__(self):
         self.instructions = instructions
 
-    async def get_dice_prompt(self, recent_scene: Dict):
+    async def get_dice_prompt(self, recent_scene: StoryActionSegment):
         """Builds the prompt for the dice roll"""
         # Dissect context and get instructions
         instructions = self.instructions["determine_dice_roll"]
-        story = recent_scene["story"]
-        action = recent_scene["action"]
+        story = recent_scene.story
+        action = recent_scene.action
 
         prompt = (
             f"Instructions: {instructions}\n\n"
@@ -24,19 +25,15 @@ class PromptBuilder:
         )
         return prompt
 
-    def get_story_prompt(
-        self, game_session: Dict, dice: Tuple[int, int, bool]
-    ) -> str:
+    def get_story_prompt(self, game_session: GameSession) -> str:
         """Builds the prompt for new stories"""
-        print("generate_story - method called")
-
         # Define variables
         instructions: str = self.instructions["generate_story"]
-        name: str = game_session["protagonist_name"]
-        inv: str = ", ".join(game_session["inventory"])
-        prev_scene: List[Dict] = game_session["scenes"]
-        action: str = game_session["scenes"][-1]["action"]
-        success: bool = dice[2]
+        name: str = game_session.protagonist_name
+        inv: str = ", ".join(game_session.inventory)
+        prev_scene: List[Dict] = game_session.scenes
+        action: str = prev_scene[-1].action
+        success: bool = prev_scene[-1].dice_success
 
         # Format the prompt
         prompt = (
@@ -48,6 +45,9 @@ class PromptBuilder:
         # Add all previous stories in chronological order
         for i, scene in enumerate(prev_scene, 1):
             prompt += f"Story {i}: {scene['story']}\n\n"
+            # Add logic that only allows 10 stories to be added
+            # Cant pick them from the  top, must pick from bottom
+            # Maybe just splice before?
 
         # Add the current action and its success (this is what we're generating a story for)
         prompt += f"Protagonist's action based on the last story: {action}\n"
@@ -65,21 +65,13 @@ class PromptBuilder:
     async def get_img_prompt(self, story: str):
         """Build the prompt for image generation"""
         # Get instructions and prompt
-        instructions = self.instructions["generate_prompt"]
+        instructions = self.instructions["image_prompt"]
         prompt = f"""
             Instructions: {instructions}
 
             Story: {story}
         """
-
-        # Spice up the prompt
-        spicy_prompt = (
-            "highly detailed, masterpiece, 8k resolution, photorealistic, "
-            "sharp focus, volumetric lighting, professional color grading, "
-            "cinematic lighting, perfect composition, " + prompt
-        )
-
-        return spicy_prompt
+        return prompt
 
     async def get_mood_prompt(self, story: str):
         """Build the prompt for mood analysis"""
