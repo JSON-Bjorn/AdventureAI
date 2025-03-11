@@ -5,9 +5,13 @@ from typing import Dict
 import uvicorn
 
 # Internal imports
-from src.game.game_loop import GameSession
+from src.game.game_loop import SceneGenerator
 from src.database.database_operations import DatabaseOperations
-from src.schemas.schemas import StartingStory, StorySegment, GameSession
+from src.schemas.schemas import (
+    StartingStory,
+    StoryActionSegment,
+    GameSession,
+)
 
 app = FastAPI()
 app.add_middleware(
@@ -37,17 +41,17 @@ async def fetch_story(story: StartingStory):
 
 
 @app.post("/roll_dice")
-async def roll_dice(story: StorySegment):
+async def roll_dice(story: StoryActionSegment):
     """
     Rolls dice and returns the result.
 
     Args:
-        story(Dict): The story and action to roll the dice on.
+        story(StoryActionSegment): The story and action to roll the dice on.
 
     Returns:
         dice_info(Dict): Threshold: int, roll: int, success: bool.
     """
-    game = GameSession()
+    game = SceneGenerator()
     dice_info = await game.get_dice_info(story)
     return dice_info
 
@@ -63,7 +67,7 @@ async def generate_new_scene(game_session: GameSession):
     Returns:
         scene(Dict): The new scene. Contains story, musicpath, image, and compressed story.
     """
-    game = GameSession()
+    game = SceneGenerator()
     scene = await game.get_next_scene(game_session)
     return scene
 

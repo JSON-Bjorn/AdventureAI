@@ -10,7 +10,7 @@ from src.database.database_operations import DatabaseOperations
 from src.schemas.schemas import StoryActionSegment, GameSession
 
 
-class GameSession:
+class SceneGenerator:
     def __init__(self):
         # Instances
         self.db_ops = DatabaseOperations()

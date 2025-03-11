@@ -16,3 +16,4 @@ class DatabaseOperations:
     def load_game(self, game_id: str):
         # Get the game sve from db
         pass
+

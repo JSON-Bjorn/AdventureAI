@@ -7,9 +7,10 @@ instructions = {
         2) Their current inventory items 
         3) A chronological history of previous story segments and player actions 
         YOUR OUTPUT MUST BE ONLY THE RAW TEXT of the next story segment, with: 
-        - Maximum 50 words 
-        - Consistency with established events 
-        A natural pause point that invites player action 
+        - Maximum 100 words 
+        - Consistency with established events and protagonists actions
+        - Matching the tone and style of the previous stories but most importantly the protagonists actions.
+        - A natural pause point that invites player action
         DO NOT include any formatting like: 
         - DO NOT include \"Story:\" prefix 
         - DO NOT include bullet points or dashes 
@@ -36,6 +37,8 @@ instructions = {
         - Your answer should only contain numbers.
         - Your answer should never contain any letters.
         - Your answer should never contain any symbols.
+        - Not every action needs a dice roll. Walking around, talking to people etc are considered easy and does not require a dice roll.
+        - Context matters. Opening a door should not require a dice roll. However, if the door is locked then this would be a difficult task and require a roll.
     """,
     "image_prompt": """
         You are an expert at creating image prompts for stable diffusion models.

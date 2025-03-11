@@ -31,9 +31,9 @@ class PromptBuilder:
         instructions: str = self.instructions["generate_story"]
         name: str = game_session.protagonist_name
         inv: str = ", ".join(game_session.inventory)
-        prev_scene: List[Dict] = game_session.scenes
-        action: str = prev_scene[-1].action
-        success: bool = prev_scene[-1].dice_success
+        scenes: List[Dict] = game_session.scenes
+        action: str = scenes[-1]["action"]
+        success: bool = scenes[-1]["dice_success"]
 
         # Format the prompt
         prompt = (
@@ -43,7 +43,7 @@ class PromptBuilder:
             "The story so far:\n"
         )
         # Add all previous stories in chronological order
-        for i, scene in enumerate(prev_scene, 1):
+        for i, scene in enumerate(scenes, 1):
             prompt += f"Story {i}: {scene['story']}\n\n"
             # Add logic that only allows 10 stories to be added
             # Cant pick them from the  top, must pick from bottom
@@ -52,7 +52,7 @@ class PromptBuilder:
         # Add the current action and its success (this is what we're generating a story for)
         prompt += f"Protagonist's action based on the last story: {action}\n"
         prompt += f"Action successful: {success}\n\n"
-        prompt += f"Story {len(prev_scene) + 1}: Please write this story based on what just happened.\n\n"
+        prompt += f"Story {len(scenes) + 1}: Please write this story based on what just happened.\n\n"
 
         return prompt
 
