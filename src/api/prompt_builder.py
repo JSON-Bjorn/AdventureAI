@@ -114,4 +114,5 @@ class PromptBuilder:
 
             return prompt
         except Exception:
+            # Yes this should be broad.
             return "calm/adventerous"
