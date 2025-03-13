@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.v1.database.models import Base
 from app.settings import settings
 
-url = settings.DATABASE_URL
+url = settings.DB_URL
 
 try:
     engine = create_engine(f"{url}", echo=True)

@@ -1,9 +1,7 @@
 # External imports
 from typing import Dict
 from requests import post, get
-from os import getenv
 from openai import OpenAI
-from dotenv import load_dotenv
 from fastapi import HTTPException
 
 # Internal imports

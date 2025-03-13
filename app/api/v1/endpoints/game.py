@@ -19,7 +19,7 @@ router = APIRouter(tags=["game"])
 @router.post("/fetch_story")
 async def fetch_story(
     story: StartingStory, db: Session = Depends(get_db)
-) -> Dict[str]:
+) -> Dict[str, str]:
     """Fetches a starting story from the database."""
     db_ops = DatabaseOperations()
     story_id = story.starting_story

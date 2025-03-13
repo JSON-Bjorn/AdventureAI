@@ -8,10 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     Numeric,
-    SmallInteger,
-    Date,
     CheckConstraint,
-    text,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -59,21 +56,25 @@ class StartingStories(Base):
     category: Mapped["AdventureCategories"] = relationship(
         "AdventureCategories",
         back_populates="starting_stories",
-        cascade="all, delete-orphan",
     )
 
 
 class Users(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    id: Mapped[UUID] = mapped_column(SQLUUID, primary_key=True)
     password: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     first_name: Mapped[str] = mapped_column(String, nullable=True)
     last_name: Mapped[str] = mapped_column(String, nullable=True)
+    all_actions: Mapped[List[str]] = mapped_column(JSONB, nullable=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now, onupdate=datetime.now
     )
 
     # Relationships
@@ -111,7 +112,7 @@ class GameSessions(Base):
 
     # Relationship
     user: Mapped["Users"] = relationship(
-        "Users", back_populates="game_sessions", cascade="all, delete-orphan"
+        "Users", back_populates="game_sessions"
     )
 
 
@@ -133,9 +134,7 @@ class Reviews(Base):
     )
 
     # Relationship
-    user: Mapped["Users"] = relationship(
-        "Users", back_populates="reviews", cascade="all, delete-orphan"
-    )
+    user: Mapped["Users"] = relationship("Users", back_populates="reviews")
 
 
 class Tokens(Base):
@@ -152,9 +151,7 @@ class Tokens(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     # Relationship
-    user: Mapped["Users"] = relationship(
-        "Users", back_populates="tokens", cascade="all, delete-orphan"
-    )
+    user: Mapped["Users"] = relationship("Users", back_populates="tokens")
 
 
 class PaymentMethods(Base):
@@ -189,11 +186,7 @@ class Payments(Base):
     )
 
     # Relationships
-    user: Mapped["Users"] = relationship(
-        "Users", back_populates="payments", cascade="all, delete-orphan"
-    )
+    user: Mapped["Users"] = relationship("Users", back_populates="payments")
     payment_method: Mapped["PaymentMethods"] = relationship(
-        "PaymentMethods",
-        back_populates="payments",
-        cascade="all, delete-orphan",
+        "PaymentMethods", back_populates="payments"
     )
