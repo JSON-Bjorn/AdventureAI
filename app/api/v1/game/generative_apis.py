@@ -1,14 +1,24 @@
-"""This file could hold all of the agents"""
-
 # External imports
 from typing import Dict
-import requests
-import os
+from requests import post, get
+from os import getenv
 from openai import OpenAI
 from dotenv import load_dotenv
 from fastapi import HTTPException
 
+# Internal imports
 from app.api.v1.game.instructions import instructions
+
+"""
+This file holds all the api calls made to our generative API's.
+
+We have three classes corresponding to the three API's:
+- TextGeneration, Uses OpenAI for text generation
+
+- ImageGeneration, Uses a locally run Stable Diffusion API.
+
+- SoundGeneration, ??
+"""
 
 
 class TextGeneration:
@@ -26,7 +36,7 @@ class TextGeneration:
 
         # OPENAI because mistral is slow as fuck
         load_dotenv()
-        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        OPENAI_API_KEY = getenv("OPENAI_API_KEY")
         self.openai = OpenAI(api_key=OPENAI_API_KEY)
 
     async def api_call(self, prompt: str, max_tokens: int = 1000):
@@ -48,7 +58,7 @@ class TextGeneration:
     async def _mistral_call_old(self, prompt: str, max_tokens: int = 100):
         """THIS IS MISTRAL"""
         try:
-            response = requests.post(
+            response = post(
                 f"{self.endpoint}generate",
                 json={"prompt": prompt, "max_tokens": max_tokens},
             )
@@ -92,7 +102,7 @@ class ImageGeneration:
             This is decoded in the frontend!!
         """
         try:
-            response = requests.get(f"{self.endpoint}?prompt={prompt}")
+            response = get(f"{self.endpoint}?prompt={prompt}")
             if response.status_code == 200:
                 byte64_image = response.json()["image"]
                 return byte64_image

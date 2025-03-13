@@ -1,10 +1,7 @@
-from typing import List, Dict
+# External imports
+from typing import Dict
 
-from app.api.v1.game.generative_apis import (
-    TextGeneration,
-    ImageGeneration,
-    SoundGeneration,
-)
+# Internal imports
 from app.api.v1.game.context_manager import GameContextManager
 from app.api.v1.database.operations import DatabaseOperations
 from app.api.v1.validation.schemas import StoryActionSegment, GameSession

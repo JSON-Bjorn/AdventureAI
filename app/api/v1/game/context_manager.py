@@ -1,15 +1,15 @@
-from typing import Dict, Tuple
+# External imports
+from typing import Dict
+from random import randint
+from re import sub
+
+# Internal imports
 from app.api.v1.game.generative_apis import (
     TextGeneration,
     ImageGeneration,
     SoundGeneration,
 )
 from app.api.v1.game.prompt_builder import PromptBuilder
-import random
-import re
-from io import BytesIO
-from PIL import Image
-import base64
 from app.api.v1.validation.schemas import StoryActionSegment, GameSession
 
 
@@ -32,7 +32,7 @@ class GameContextManager:
 
         # Get threshold and roll
         threshold: int = await self._convert_dice_threshold_to_int(llm_output)
-        roll: int = random.randint(1, 20)
+        roll: int = randint(1, 20)
         success: bool = roll >= threshold
 
         # Build the return response
@@ -47,7 +47,7 @@ class GameContextManager:
     async def _convert_dice_threshold_to_int(self, llm_output: str) -> int:
         """Converts LLM output to integer dice threshold"""
         # Remove non-digit characters
-        threshold = re.sub(r"[^0-9]", "", str(llm_output))
+        threshold = sub(r"[^0-9]", "", str(llm_output))
 
         # Default to 0 if no number found
         if threshold == "":
