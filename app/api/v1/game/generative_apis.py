@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 # Internal imports
 from app.api.v1.game.instructions import instructions
+from app.settings import settings
 
 """
 This file holds all the api calls made to our generative API's.
@@ -29,15 +30,13 @@ class TextGeneration:
         self.instructions = instructions
 
         # Set the endpoint
-        self.endpoint = "http://localhost:8000/"
+        self.endpoint = settings.MISTRAL_PORT
 
         # List for previous stories
         self.previous_stories = []
 
-        # OPENAI because mistral is slow as fuck
-        load_dotenv()
-        OPENAI_API_KEY = getenv("OPENAI_API_KEY")
-        self.openai = OpenAI(api_key=OPENAI_API_KEY)
+        # If OpenAI API is preferred
+        self.openai = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     async def api_call(self, prompt: str, max_tokens: int = 1000):
         """Using OpenAI because computer slow"""
@@ -88,7 +87,7 @@ class ImageGeneration:
 
     def __init__(self) -> None:
         # The endpoint for the image generation API
-        self.endpoint = "http://localhost:8001/generate"
+        self.endpoint = settings.STABLE_DIFFUSION_PORT
 
     async def api_call(self, prompt: str):
         """
