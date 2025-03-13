@@ -1,4 +1,5 @@
-Det är nog dags att pusha detta till main snart
+Refactor done.
+Kör main.py i root för att starta servern.
 
 # Current state
 Backend fungerar som den ska.
