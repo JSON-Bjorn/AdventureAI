@@ -1,10 +1,10 @@
 # External imports
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, Depends
 from typing import Dict
-import uvicorn
+from sqlalchemy.orm import Session
 
 # Internal imports
+from app.db_setup import get_db
 from app.api.v1.game.game_loop import SceneGenerator
 from app.api.v1.database.operations import DatabaseOperations
 from app.api.v1.validation.schemas import (
@@ -13,26 +13,21 @@ from app.api.v1.validation.schemas import (
     GameSession,
 )
 
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+router = APIRouter(tags=["game"])
 
 
-@app.post("/fetch_story")
-async def fetch_story(story: StartingStory):
+@router.post("/fetch_story")
+async def fetch_story(
+    story: StartingStory, db: Session = Depends(get_db)
+) -> Dict[str]:
     """Fetches a starting story from the database."""
     db_ops = DatabaseOperations()
     story_id = story.starting_story
-    story_value = db_ops.get_story(story_id)
-    return story_value
+    starting_story = db_ops.get_story(story_id)
+    return starting_story
 
 
-@app.post("/roll_dice")
+@router.post("/roll_dice")
 async def roll_dice(story: StoryActionSegment) -> Dict[str, str | int | bool]:
     """Rolls dice on a story/action segmentand returns the result."""
     game = SceneGenerator()
@@ -40,7 +35,7 @@ async def roll_dice(story: StoryActionSegment) -> Dict[str, str | int | bool]:
     return dice_info
 
 
-@app.post("/generate_new_scene")
+@router.post("/generate_new_scene")
 async def generate_new_scene(game_session: GameSession) -> Dict[str, str]:
     """Generates a new scene based on the previous one."""
     game = SceneGenerator()
@@ -48,5 +43,20 @@ async def generate_new_scene(game_session: GameSession) -> Dict[str, str]:
     return scene
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@router.post("/save_game")
+async def save_game(
+    game_session: GameSession, db: Session = Depends(get_db)
+) -> Dict[str, str]:
+    """Saves stories and user input to the database."""
+    # Save the game_session stories to the database under game_session table
+    # Save the users input to the database under users.inputs
+    return {"message": "Our backend dev is on vacation"}
+
+
+@router.get("/load_game")
+async def load_game(
+    game_session: GameSession, db: Session = Depends(get_db)
+) -> Dict[str, str]:
+    """Loads a game session from the database."""
+    # Do the thing
+    return {"message": "Our backend dev is on vacation"}
