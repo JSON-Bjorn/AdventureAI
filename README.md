@@ -17,10 +17,13 @@ Alla api calls funkar. Inga oväntade bugs när jag använder frontend.
 - Implementera save funktionalitet
 - Implementera users
 
-### Backend code
-- Splice context med limit på 10 stories.
-    - Lägg spliceade stories i en lista som vi postar till db när session tar slut.
-- Validering av music/path-output från LLM API.
-    - Vi kan kanske koppla ett schema till detta med två fält, literal[]
-    - Vi kan även använda difflib för att ersätta close matches
-    - Vi validerar redan att kategori och subkategori matchar i prompt_builder/_validate_mood_prompt.
+### Endpoints
+- /save_game
+    Spara player info, inventory och alla scenes (komprimerade).
+
+- /load_game
+    Ladda en session från databasen.
+
+- /login
+    Logga in eller skapa nytt konto.
+

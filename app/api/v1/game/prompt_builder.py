@@ -1,5 +1,6 @@
 # External imports
 from typing import Dict, List
+from difflib import get_close_matches
 
 # Internal imports
 from app.api.v1.game.instructions import instructions
@@ -32,9 +33,9 @@ class PromptBuilder:
         instructions: str = self.instructions["generate_story"]
         name: str = game_session.protagonist_name
         inv: str = ", ".join(game_session.inventory)
-        all_scenes: List[Dict] = game_session.scenes
-        action: str = all_scenes[-1]["action"]
-        success: bool = all_scenes[-1]["dice_success"]
+        recent_scenes: List[Dict] = game_session.scenes[-10:]
+        action: str = recent_scenes[-1]["action"]
+        success: bool = recent_scenes[-1]["dice_success"]
 
         # Format the prompt
         prompt = (
@@ -43,17 +44,14 @@ class PromptBuilder:
             f"Protagonist's inventory: {inv}\n\n"
             "The story so far:\n"
         )
-        # Add all previous stories in chronological order
-        for i, scene in enumerate(all_scenes, 1):
+        # Add the 10 last stories in chronological order to prompt
+        for i, scene in enumerate(recent_scenes, 1):
             prompt += f"Story {i}: {scene['story']}\n\n"
-            # Add logic that only allows 10 stories to be added
-            # Cant pick them from the  top, must pick from bottom
-            # Maybe just splice before?
 
         # Add the current action and its success (this is what we're generating a story for)
         prompt += f"Protagonist's action based on the last story: {action}\n"
         prompt += f"Action successful: {success}\n\n"
-        prompt += f"Story {len(all_scenes) + 1}: Please write this story based on what just happened.\n\n"
+        prompt += f"Story {len(recent_scenes) + 1}: Please write this story based on what just happened.\n\n"
 
         return prompt
 
@@ -86,6 +84,7 @@ class PromptBuilder:
 
     def _validate_mood_prompt(self, prompt: str) -> str:
         """Validates the mood prompt"""
+        # Mood-map
         valid_combinations = {
             "calm": ["adventerous", "dreamy", "mystical", "serene"],
             "medium": [
@@ -100,16 +99,31 @@ class PromptBuilder:
         }
 
         try:
+            # Split the prompt
             parts = prompt.split("/")
-
             if len(parts) == 2:
                 first, second = parts
             else:
                 return "calm/adventerous"
 
+            # Lowercase the parts
             first = first.lower()
             second = second.lower()
 
+            # Check for close matches
+            first_results = get_close_matches(
+                first, valid_combinations.keys()
+            )
+            if first_results:
+                first = first_results[0]
+
+            second_results = get_close_matches(
+                second, valid_combinations[first]
+            )
+            if second_results:
+                second = second_results[0]
+
+            # Check if the second part is valid
             if second not in valid_combinations[first]:
                 return "calm/adventerous"
 
