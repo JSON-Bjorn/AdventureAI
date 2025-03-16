@@ -96,8 +96,8 @@ class GameSessions(Base):
     __tablename__ = "game_sessions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[UUID] = mapped_column(
+        SQLUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     session_name: Mapped[str] = mapped_column(String, nullable=False)
     protagonist_name: Mapped[str] = mapped_column(String, nullable=False)
@@ -120,8 +120,8 @@ class Reviews(Base):
     __tablename__ = "reviews"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[UUID] = mapped_column(
+        SQLUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     rating: Mapped[int] = mapped_column(
         Integer,
@@ -141,8 +141,8 @@ class Tokens(Base):
     __tablename__ = "tokens"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[UUID] = mapped_column(
+        SQLUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     token: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -172,8 +172,8 @@ class Payments(Base):
     __tablename__ = "payments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[UUID] = mapped_column(
+        SQLUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     payment_method_id: Mapped[int] = mapped_column(
         Integer,
