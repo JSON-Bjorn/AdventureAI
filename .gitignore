@@ -17,3 +17,4 @@ gguf
 node_modules/
 static/images/
 static/audio/
+logs/
