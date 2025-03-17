@@ -47,7 +47,6 @@ class StartingStories(Base):
         nullable=False,
     )
     story: Mapped[str] = mapped_column(String, nullable=False)
-    action: Mapped[List[str]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now
     )
