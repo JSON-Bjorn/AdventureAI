@@ -2,6 +2,7 @@
 from typing import Dict
 from random import randint
 from re import sub
+from difflib import get_close_matches
 
 # Internal imports
 from app.api.v1.game.generative_apis import (
@@ -124,12 +125,90 @@ class GameContextManager(Loggable):
 
     async def analyze_mood(self, story: str) -> str:
         """Analyzes the mood of the story and returns path to appropriate music"""
+        # Build the prompt and get the LLM output
         self.logger.info("Analyzing mood of story for music selection")
         prompt = await self.prompt.get_mood_prompt(story)
-        mood = await self.text.api_call(prompt)
-        self.logger.debug(f"Mood analysis LLM output: {mood}")
+        llm_output = await self.text.api_call(prompt)
+        self.logger.debug(f"Mood analysis LLM output: {llm_output}")
 
-        music_path = await self.sound.api_call(mood)
+        # Validate the prompt and get the music path
+        music_path = self._validate_mood_prompt(llm_output)
         self.logger.info(f"Music path after validation: {music_path}")
 
         return music_path
+
+    def _validate_mood_prompt(self, prompt: str) -> str:
+        """Validates the mood prompt"""
+        self.logger.debug(f"Validating mood prompt: {prompt[:100]}...")
+        # Mood-map
+        valid_combinations = {
+            "calm": ["adventerous", "dreamy", "mystical", "serene"],
+            "medium": [
+                "lurking",
+                "nervous",
+                "ominous",
+                "playful",
+                "quirky",
+                "upbeat",
+            ],
+            "intense": ["chaotic", "combat", "epic", "scary"],
+        }
+
+        try:
+            # Split the prompt
+            parts = prompt.split("/")
+            if len(parts) == 2:
+                first, second = parts
+            else:
+                self.logger.warning(
+                    f"Invalid mood prompt format: {prompt}, using default"
+                )
+                return "calm/adventerous"
+
+            # Lowercase the parts
+            first = first.lower()
+            second = second.lower()
+
+            # Check for close matches using difflib
+            first_results = get_close_matches(
+                first, valid_combinations.keys()
+            )
+            if first_results:
+                first = first_results[0]
+                self.logger.debug(
+                    f"Matched first part '{first}' to valid mood intensity"
+                )
+            else:
+                self.logger.warning(
+                    f"No match found for mood intensity '{first}', using default"
+                )
+                first = "calm"
+
+            second_results = get_close_matches(
+                second, valid_combinations[first]
+            )
+            if second_results:
+                second = second_results[0]
+                self.logger.debug(
+                    f"Matched second part '{second}' to valid mood type"
+                )
+            else:
+                self.logger.warning(
+                    f"No match found for mood type '{second}', using default"
+                )
+                second = valid_combinations[first][0]
+
+            # Check if the second part is valid
+            if second not in valid_combinations[first]:
+                self.logger.warning(
+                    f"Invalid mood combination: {first}/{second}, using default"
+                )
+                second = valid_combinations[first][0]
+
+            validated_mood = f"{first}/{second}"
+            self.logger.info(f"Validated mood: {validated_mood}")
+            return validated_mood
+
+        except Exception as e:
+            self.logger.error(f"Error validating mood prompt: {str(e)}")
+            return "calm/adventerous"

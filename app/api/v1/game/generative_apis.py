@@ -119,7 +119,7 @@ class ImageGeneration(Loggable):
         self.logger.info("Making Stable Diffusion API call")
         self.logger.debug(f"Image prompt length: {len(prompt)}")
         try:
-            response = get(f"{self.endpoint}?prompt={prompt}")
+            response = get(f"{self.endpoint}/generate?prompt={prompt}")
             if response.status_code == 200:
                 byte64_image = response.json()["image"]
                 image_size = len(byte64_image) / 1000
