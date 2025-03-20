@@ -4,7 +4,12 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
 # Create logs directory at the root
-logs_dir = "/logs"
+logs_dir = os.path.join(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    ),
+    "logs",
+)
 os.makedirs(logs_dir, exist_ok=True)
 
 # Define log file path with timestamp
