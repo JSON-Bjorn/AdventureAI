@@ -20,7 +20,7 @@ class SceneGenerator(Loggable):
 
     async def get_dice_info(self, story: StoryActionSegment):
         """Rolls the dice and returns the result"""
-        self.logger.info(f"Rolling dice for action: {story.player_action}")
+        self.logger.info(f"Rolling dice for action: {story.action}")
         return await self.manager.roll_dice(story)
 
     async def get_next_scene(self, game_session: GameSession):
