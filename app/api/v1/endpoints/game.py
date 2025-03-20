@@ -21,14 +21,12 @@ router = APIRouter(tags=["game"])
 
 
 @router.post("/fetch_story")
-async def fetch_story(
-    story: StartingStory, db: Session = Depends(get_db)
-) -> Dict[str, str]:
+async def fetch_story(story: StartingStory) -> Dict[str, str]:
     """Fetches a starting story from the database."""
     logger.info(
         f"Fetch story endpoint requested with story ID: {story.starting_story}"
     )
-    db_ops = DatabaseOperations(db)
+    db_ops = DatabaseOperations()
     story_id = story.starting_story
     starting_story = db_ops.get_story(story_id)
     logger.info("Successfully fetched starting story")
@@ -56,9 +54,7 @@ async def generate_new_scene(game_session: GameSession) -> Dict[str, str]:
 
 
 @router.post("/save_game")
-async def save_game(
-    game_session: GameSession, db: Session = Depends(get_db)
-) -> Dict[str, str]:
+async def save_game(game_session: GameSession) -> Dict[str, str]:
     """Saves stories and user input to the database."""
     logger.info("Saving game session")
     # Save the game_session stories to the database under game_session table

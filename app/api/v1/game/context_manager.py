@@ -77,9 +77,7 @@ class GameContextManager(Loggable):
 
     async def new_story(self, game_session: GameSession) -> Dict:
         """Gets prompt and makes API call"""
-        self.logger.info(
-            f"Generating new story for game session: {game_session.id}"
-        )
+        self.logger.info("Generating new story")
         # Get prompt and make API call
         prompt = self.prompt.get_story_prompt(game_session)
         new_story = await self.text.api_call(prompt)

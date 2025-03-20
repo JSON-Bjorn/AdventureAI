@@ -6,8 +6,10 @@ import secrets
 import base64
 from datetime import datetime, timedelta
 import re
+from fastapi import Depends
 
 # Internal imports
+from app.db_setup import get_db
 from app.api.v1.database.models import Users, Tokens
 from app.api.v1.validation.schemas import UserCreate
 from app.api.logger.logger import (
@@ -16,8 +18,8 @@ from app.api.logger.logger import (
 
 
 class DatabaseOperations:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self):
+        self.db: Session = Depends(get_db)
         # Create a class-specific logger as an instance variable
         self.logger = get_logger(
             f"{self.__class__.__module__}.{self.__class__.__name__}"
