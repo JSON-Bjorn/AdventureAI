@@ -6,8 +6,6 @@ Fungerar.
 Går att köra spelet på och går även att lägga till users till databasen.
 
 # Next steps
-### Kod
-- LOGGER FOR GOD SAKE
 
 ### Prompt engineering.
 - Dice rolls är för svåra. Ibland måste jag rulla 15 för att gå iväg från en nyckel på golvet.
@@ -35,7 +33,4 @@ Går att köra spelet på och går även att lägga till users till databasen.
 - /logout
     Logga ut.
 
-- /
-
-
-
+- /reset_password

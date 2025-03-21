@@ -3,7 +3,7 @@ from typing import Optional
 
 
 class StartingStory(BaseModel):
-    starting_story: str
+    starting_story: int
 
 
 class StoryActionSegment(BaseModel):
@@ -24,8 +24,6 @@ class UserCreate(BaseModel):
 
     password: str
     email: EmailStr
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
@@ -33,6 +31,23 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+
+
+class UserUpdate(BaseModel):
+    token: str
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+
+class UserLogout(BaseModel):
+    token: str
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
 
 class SaveGame(BaseModel):
@@ -46,25 +61,3 @@ class LoadGame(BaseModel):
 
 class ResetPassword(BaseModel):
     email: EmailStr
-
-
-class Logout(BaseModel):
-    token: str
-
-
-class Login(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class Register(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class UpdateUser(BaseModel):
-    token: str
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None

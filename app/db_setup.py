@@ -45,3 +45,4 @@ def get_db():
             db_setup_logger.debug("Database session closed")
     except Exception as e:
         db_setup_logger.error(f"Error in database session: {str(e)}")
+        raise

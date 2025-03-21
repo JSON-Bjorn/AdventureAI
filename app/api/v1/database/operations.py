@@ -6,30 +6,41 @@ import secrets
 import base64
 from datetime import datetime, timedelta
 import re
-from fastapi import Depends
+import uuid
+import sqlalchemy
+from fastapi import HTTPException
 
 # Internal imports
-from app.db_setup import get_db
 from app.api.v1.database.models import Users, Tokens
 from app.api.v1.validation.schemas import UserCreate
+from sqlalchemy import select
 from app.api.logger.logger import (
     get_logger,
-)  # Import get_logger instead of specific logger
+)
+from app.api.v1.database.models import StartingStories
 
 
 class DatabaseOperations:
-    def __init__(self):
-        self.db: Session = Depends(get_db)
+    def __init__(self, db: Session):
+        self.db = db
         # Create a class-specific logger as an instance variable
         self.logger = get_logger(
             f"{self.__class__.__module__}.{self.__class__.__name__}"
         )
         self.logger.info("Database operations initialized with session")
 
-    def get_story(self, story_id: str):
-        # Placeholder method
+    def get_start_story(self, story_id: str):
+        """Retrieves a starting story from the database"""
         self.logger.info(f"Retrieving story with ID: {story_id}")
-        return {"story": "You are a cat, chasing a mouse around the house."}
+
+        stmt = select(StartingStories).where(StartingStories.id == story_id)
+        result = self.db.execute(stmt)
+        story = result.scalar_one_or_none()
+
+        if story is None:
+            self.logger.error(f"Story with ID {story_id} not found")
+            raise ValueError(f"Story with ID {story_id} not found")
+        return story
 
     def save_game(self, context: Dict):
         # Post game save to db
@@ -43,25 +54,9 @@ class DatabaseOperations:
         self.logger.info(f"Loading game with ID: {game_id}")
         pass
 
-    def _validate_email(self, email: str) -> bool:
-        """Validate email format"""
-        self.logger.debug(f"Validating email format: {email}")
-        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        is_valid = re.match(email_pattern, email)
-        return bool(is_valid)
-
-    def _check_existing_user(self, email: str) -> bool:
-        """Check if a user with the given email already exists"""
-        self.logger.debug(f"Checking if user exists with email: {email}")
-        existing_user = (
-            self.db.query(Users).filter(Users.email == email).first()
-        )
-
-        return bool(existing_user)
-
     def validate_token(self, token: str) -> Dict:
         """Validate a token and return user info if valid"""
-        self.logger.info(f"Validating user token")
+        self.logger.info("Validating user token")
         db_token = self.db.query(Tokens).filter(Tokens.token == token).first()
 
         if not db_token:
@@ -79,11 +74,17 @@ class DatabaseOperations:
         self.logger.info(f"Creating new user with email: {user_data.email}")
         # Validate email format
         if not self._validate_email(user_data.email):
-            raise ValueError("Invalid email format")
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid email format",
+            )
 
         # Check if user already exists
         if self._check_existing_user(user_data.email):
-            raise ValueError("User with this email already exists")
+            raise HTTPException(
+                status_code=400,
+                detail="User with this email already exists",
+            )
 
         # Hash the password
         password_bytes = user_data.password.encode("utf-8")
@@ -92,14 +93,25 @@ class DatabaseOperations:
         hashed_password_str = hashed_password.decode("utf-8")
 
         # Create the user
-        db_user = Users(
-            email=user_data.email,
-            password=hashed_password_str,
-            username=user_data.username,
-            first_name=user_data.first_name,
-            last_name=user_data.last_name,
-        )
-
+        for attempt in range(3):
+            try:
+                db_user = Users(
+                    id=uuid.uuid4(),
+                    email=user_data.email,
+                    password=hashed_password_str,
+                )
+                break
+            except sqlalchemy.exc.IntegrityError:
+                self.logger.error(
+                    "Error posting to Users table due to UUID unique constraint. "
+                    "If this happened, reality is a simulation."
+                )
+                if attempt == 2:
+                    raise HTTPException(
+                        status_code=500,
+                        detail="User creation failed when posting to database.",
+                    )
+                continue
         # Add the user to the database
         self.db.add(db_user)
         self.db.commit()
@@ -134,3 +146,19 @@ class DatabaseOperations:
         self.db.refresh(db_token)
 
         return token
+
+    def _validate_email(self, email: str) -> bool:
+        """Validate email format"""
+        self.logger.debug(f"Validating email format: {email}")
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        is_valid = re.match(email_pattern, email)
+        return bool(is_valid)
+
+    def _check_existing_user(self, email: str) -> bool:
+        """Check if a user with the given email already exists"""
+        self.logger.debug(f"Checking if user exists with email: {email}")
+        existing_user = (
+            self.db.query(Users).filter(Users.email == email).first()
+        )
+
+        return bool(existing_user)

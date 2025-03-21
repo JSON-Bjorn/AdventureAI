@@ -9,11 +9,11 @@ from app.api.logger.loggable import Loggable
 
 
 class SceneGenerator(Loggable):
-    def __init__(self):
+    def __init__(self, db=None):
         super().__init__()  # self.logger
 
         # Instances
-        self.db_ops = DatabaseOperations()
+        self.db_ops = DatabaseOperations(db) if db else None
         self.manager = GameContextManager()
 
         self.logger.info("SceneGenerator initialized")

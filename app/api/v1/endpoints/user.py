@@ -5,9 +5,15 @@ from typing import Dict
 
 # Internal imports
 from app.db_setup import get_db
-from app.api.v1.validation.schemas import UserCreate, UserUpdate
 from app.api.v1.database.operations import DatabaseOperations
 from app.api.logger.logger import get_logger
+from app.api.v1.validation.schemas import (
+    UserCreate,
+    UserUpdate,
+    UserLogin,
+    UserLogout,
+)
+
 
 logger = get_logger("app.api.endpoints.user")
 
@@ -15,9 +21,7 @@ router = APIRouter(tags=["users"])
 
 
 @router.post("/register")
-async def register_user(
-    user: UserCreate, db: Session = Depends(get_db)
-) -> Dict[str, str]:
+async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     """Register a new user with email and password"""
     logger.info(f"Register User endpoint requested with email: {user.email}")
     try:
@@ -29,6 +33,9 @@ async def register_user(
         logger.warning(f"Registration failed for {user.email}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        # Only catch exceptions that aren't already HTTPExceptions
+        if isinstance(e, HTTPException):
+            raise
         logger.error(f"Internal error during user registration: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Internal server error: {e}"
@@ -49,7 +56,24 @@ async def update_user(
         logger.warning(f"User update failed for ID {user.id}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        # Only catch exceptions that aren't already HTTPExceptions
+        if isinstance(e, HTTPException):
+            raise
         logger.error(f"Internal error during user update: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Internal server error: {e}"
         )
+
+
+@router.post("/login")
+async def login_user(user: UserLogin) -> Dict[str, str]:
+    """Login a user with email and password"""
+    logger.info(f"Login User endpoint requested with email: {user.email}")
+    pass
+
+
+@router.post("/logout")
+async def logout_user(user: UserLogout) -> Dict[str, str]:
+    """Logout a user"""
+    logger.info(f"Logout User endpoint requested with email: {user.email}")
+    pass
