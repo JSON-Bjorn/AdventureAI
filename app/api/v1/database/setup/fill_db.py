@@ -71,19 +71,28 @@ def starting_stories(session: Session):
     stories = [
         {
             "category_id": 1,  # Fantasy
-            "story": "You find yourself in a magical forest, surrounded by ancient trees and glowing mushrooms. In the distance, you hear the faint sound of singing.",
-        },
-        {
-            "category_id": 1,  # Fantasy
-            "story": "The dragon's cave looms before you, the entrance adorned with gold and jewels. Your quest to retrieve the legendary sword begins here.",
+            "story": """
+You paused to catch his breath as he reached the top of the old tower. Sunlight filtered through cracked windows, illuminating the object he'd been searching for—a crown, split in two, resting on a stone pedestal.
+For years, unusual cold seasons had troubled the kingdom since the crown's separation. Village elders spoke of balance that could be restored, while others whispered that its power should be relinquished entirely.
+You studied the artifact with curiosity.""",
         },
         {
             "category_id": 2,  # Horror
-            "story": "The abandoned hospital stands silent in the moonlight. Your flashlight flickers as you approach the entrance, the door creaking open by itself.",
+            "story": """
+Your fingers clawed at the wet earth as the sinkhole widened beneath the basement floor.
+"Help!" His scream echoed, but the realtor had left hours ago.
+As he slipped further down, his flashlight beam caught glimpses of impossible architecture below—stone corridors older than human civilization, walls inscribed with symbols that hurt his eyes, and something massive shifting in the darkness.
+The fall lasted seconds but felt eternal. Now, bleeding and disoriented in a chamber that shouldn't exist, they heard scraping sounds approaching from multiple tunnels.
+""",
         },
         {
             "category_id": 3,  # Science Fiction
-            "story": "The space station's alarm blares as you wake from cryosleep. The artificial gravity seems to be malfunctioning, and you're the only crew member awake.",
+            "story": """
+You crashed to the deck as the transport's rear section tore away, venting atmosphere and three screaming soldiers into the void. Emergency lights bathed the corridor in crimson.
+"Hostiles on the hull!" the Lieutenant shouted, his voice distorted through the comm as your helmet sealed automatically. "Defense turrets weren't deactivated!"
+His first mission, and the Ascendant station had already killed half the squad. Something had hacked their approach codes.
+A section of wall buckled inward with a tortured screech of metal. Behind it, you glimpsed movement—neither human nor mechanical—slithering through the breach.
+""",
         },
     ]
     for story in stories:
