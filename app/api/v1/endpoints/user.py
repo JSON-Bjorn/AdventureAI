@@ -24,22 +24,10 @@ router = APIRouter(tags=["users"])
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     """Register a new user with email and password"""
     logger.info(f"Register User endpoint requested with email: {user.email}")
-    try:
-        db_ops = DatabaseOperations(db)
-        result = db_ops.create_user(user)
-        logger.info(f"Successfully registered user with email: {user.email}")
-        return result
-    except ValueError as e:
-        logger.warning(f"Registration failed for {user.email}: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Only catch exceptions that aren't already HTTPExceptions
-        if isinstance(e, HTTPException):
-            raise
-        logger.error(f"Internal error during user registration: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Internal server error: {e}"
-        )
+    db_ops = DatabaseOperations(db)
+    result = db_ops.create_user(user)
+    logger.info(f"Successfully registered user with email: {user.email}")
+    return result
 
 
 @router.put("/update")

@@ -142,7 +142,8 @@ class GameSessions(Base):
     user_id: Mapped[UUID] = mapped_column(
         SQLUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    session_name: Mapped[str] = mapped_column(String, nullable=False)
+    session_name: Mapped[str] = mapped_column(String, nullable=True)
+    last_image: Mapped[str] = mapped_column(String, nullable=True)
     protagonist_name: Mapped[str] = mapped_column(String, nullable=False)
     inventory: Mapped[List[str]] = mapped_column(JSONB, nullable=False)
     stories: Mapped[List[str]] = mapped_column(JSONB, nullable=False)

@@ -1,5 +1,6 @@
 # External imports
-from typing import Dict
+from typing import Dict, List
+from uuid import UUID
 from sqlalchemy.orm import Session
 import bcrypt
 import secrets
@@ -8,26 +9,114 @@ from datetime import datetime, timedelta
 import re
 import uuid
 import sqlalchemy
+from sqlalchemy import select, insert, update, func, text
 from fastapi import HTTPException
 
 # Internal imports
-from app.api.v1.database.models import Users, Tokens
-from app.api.v1.validation.schemas import UserCreate
-from sqlalchemy import select
-from app.api.logger.logger import (
-    get_logger,
+from app.api.v1.database.models import (
+    Users,
+    Tokens,
+    StartingStories,
+    GameSessions,
 )
-from app.api.v1.database.models import StartingStories
+from app.api.v1.validation.schemas import UserCreate, SaveGame, GameSession
+from app.api.logger.loggable import Loggable
 
 
-class DatabaseOperations:
+class DatabaseOperations(Loggable):
     def __init__(self, db: Session):
+        super().__init__()
         self.db = db
-        # Create a class-specific logger as an instance variable
-        self.logger = get_logger(
-            f"{self.__class__.__module__}.{self.__class__.__name__}"
-        )
         self.logger.info("Database operations initialized with session")
+
+    def validate_token(self, token: str) -> UUID:
+        """Validate a token and return the user_id if valid"""
+        self.logger.info(f"Validating user token: {token[:10]}...")
+
+        stmt = select(Tokens).where(Tokens.token == token)
+        result = self.db.execute(stmt)
+        token_data = result.scalar_one_or_none()
+
+        if not token_data:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token",
+            )
+        else:
+            user_id = token_data.user_id
+            self.logger.info(
+                f"Token validated for user: {str(user_id)[:10]}..."
+            )
+            return user_id
+
+    def save_game_route(self, data: SaveGame, user_id):
+        """Routes incoming save-requests to the correct method"""
+        if data.game_session.id is None:
+            self._save_new_game(data, user_id)
+        else:
+            self._save_old_game(data, user_id)
+
+    def _save_new_game(self, data: SaveGame, user_id):
+        """Saves entire new game sessions to the database"""
+        # Extract the game session data for easy access
+        stmt = insert(GameSessions).values(
+            user_id=user_id,
+            last_image=data.image,
+            protagonist_name=data.game_session.protagonist_name,
+            session_name=data.game_session.session_name,
+            inventory=data.game_session.inventory,
+            stories=data.game_session.scenes,
+        )
+        self.db.execute(stmt)
+        self.db.commit()
+
+    def _save_old_game(self, data: SaveGame, user_id):
+        """Saves scenes to an already existing game session"""
+        # Get the current stories from db row
+        stmt = select(GameSessions.stories).where(
+            GameSessions.id == data.game_session.id
+        )
+        result = self.db.execute(stmt)
+        old_scenes = result.scalar_one_or_none()
+
+        # Combine the two lists
+        updated_scenes = old_scenes + data.game_session.scenes
+
+        # Build the query for post
+        stmt = (
+            update(GameSessions)
+            .where(GameSessions.id == data.game_session.id)
+            .values(
+                last_image=data.image,
+                session_name=data.game_session.session_name,
+                inventory=data.game_session.inventory,
+                stories=updated_scenes,
+            )
+        )
+        self.db.execute(stmt)
+        self.db.commit()
+
+    def load_game(self, user_id: str):
+        """Loads all game sessions from a user"""
+        # Get the game saves from database
+        stmt = select(GameSessions).where(GameSessions.user_id == user_id)
+        result = self.db.execute(stmt)
+        all_saves: List[GameSessions] = result.scalars().all()
+
+        # Convert and return the saves as readable data
+        response_data = []
+        for save in all_saves:
+            response_data.append(
+                {
+                    "id": save.id,
+                    "protagonist_name": save.protagonist_name,
+                    "inventory": save.inventory,
+                    "session_name": save.session_name,
+                    "stories": save.stories,
+                    "image": save.last_image,
+                }
+            )
+        return response_data
 
     def get_start_story(self, story_id: str):
         """Retrieves a starting story from the database"""
@@ -41,33 +130,6 @@ class DatabaseOperations:
             self.logger.error(f"Story with ID {story_id} not found")
             raise ValueError(f"Story with ID {story_id} not found")
         return story
-
-    def save_game(self, context: Dict):
-        # Post game save to db
-        self.logger.info(
-            f"Saving game with context: {context.get('game_id', 'unknown')}"
-        )
-        pass
-
-    def load_game(self, game_id: str):
-        # Get the game sve from db
-        self.logger.info(f"Loading game with ID: {game_id}")
-        pass
-
-    def validate_token(self, token: str) -> Dict:
-        """Validate a token and return user info if valid"""
-        self.logger.info("Validating user token")
-        db_token = self.db.query(Tokens).filter(Tokens.token == token).first()
-
-        if not db_token:
-            return {"valid": False, "error": "Token not found"}
-
-        current_time = datetime.now()
-
-        if db_token.expires_at < current_time:
-            return {"valid": False, "error": "Token expired"}
-
-        return {"valid": True, "user_id": db_token.user_id}
 
     def create_user(self, user_data: UserCreate) -> Dict:
         """Create a new user in the database"""
@@ -92,7 +154,7 @@ class DatabaseOperations:
         hashed_password = bcrypt.hashpw(password_bytes, salt)
         hashed_password_str = hashed_password.decode("utf-8")
 
-        # Create the user
+        # Create and post user to db
         for attempt in range(3):
             try:
                 db_user = Users(
@@ -100,6 +162,9 @@ class DatabaseOperations:
                     email=user_data.email,
                     password=hashed_password_str,
                 )
+                self.db.add(db_user)
+                self.db.commit()
+                self.db.refresh(db_user)
                 break
             except sqlalchemy.exc.IntegrityError:
                 self.logger.error(
@@ -112,14 +177,9 @@ class DatabaseOperations:
                         detail="User creation failed when posting to database.",
                     )
                 continue
-        # Add the user to the database
-        self.db.add(db_user)
-        self.db.commit()
-        self.db.refresh(db_user)
 
         # Get access token
         access_token = self._create_access_token(db_user.id)
-
         return {"access_token": access_token}
 
     def _create_access_token(self, user_id: int) -> str:

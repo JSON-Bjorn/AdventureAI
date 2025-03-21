@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from uuid import UUID
 
 
 class StartingStory(BaseModel):
@@ -13,6 +14,7 @@ class StoryActionSegment(BaseModel):
 
 class GameSession(BaseModel):
     id: Optional[int] = None
+    session_name: Optional[str] = None
     protagonist_name: str
     inventory: list[str]
     current_story: str
