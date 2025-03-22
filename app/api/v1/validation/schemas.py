@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from uuid import UUID
 
 
 class StartingStory(BaseModel):
@@ -26,13 +25,6 @@ class UserCreate(BaseModel):
 
     password: str
     email: EmailStr
-
-
-class UserUpdate(BaseModel):
-    password: Optional[str] = None
-    email: Optional[EmailStr] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
