@@ -3,6 +3,8 @@ from typing import Dict
 from requests import post, get
 from openai import OpenAI
 from fastapi import HTTPException
+from urllib3.exceptions import NewConnectionError
+from requests.exceptions import ConnectionError
 
 # Internal imports
 from app.api.v1.game.instructions import instructions
@@ -135,6 +137,12 @@ class ImageGeneration(Loggable):
                     status_code=response.status_code,
                     detail=f"Error: Stable Diffusion API gave status code: {response.status_code}",
                 )
+        except (NewConnectionError, ConnectionError):
+            self.logger.error("Stable Diffusion API is not running")
+            raise HTTPException(
+                status_code=500,
+                detail="Stable Diffusion server is not running",
+            )
         except Exception as e:
             self.logger.error(f"Error in Stable Diffusion API call: {str(e)}")
             raise HTTPException(
