@@ -128,7 +128,10 @@ class DatabaseOperations(Loggable):
 
         if story is None:
             self.logger.error(f"Story with ID {story_id} not found")
-            raise ValueError(f"Story with ID {story_id} not found")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Story with ID {story_id} not found",
+            )
         return story
 
     def create_user(self, user_data: UserCreate) -> Dict:

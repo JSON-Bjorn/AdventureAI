@@ -6,6 +6,7 @@ from typing import Dict
 # Internal imports
 from app.db_setup import get_db
 from app.api.v1.database.operations import DatabaseOperations
+from app.api.v1.endpoints.token_validation import get_token, validate_token
 from app.api.logger.logger import get_logger
 from app.api.v1.validation.schemas import (
     UserCreate,
