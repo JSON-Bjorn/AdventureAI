@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import re
 import uuid
 import sqlalchemy
-from sqlalchemy import select, insert, update, func, text
+from sqlalchemy import select, insert, update, func, text, delete
 from fastapi import HTTPException
 
 # Internal imports
@@ -19,7 +19,12 @@ from app.api.v1.database.models import (
     StartingStories,
     GameSessions,
 )
-from app.api.v1.validation.schemas import UserCreate, SaveGame, GameSession
+from app.api.v1.validation.schemas import (
+    UserCreate,
+    SaveGame,
+    GameSession,
+    UserLogin,
+)
 from app.api.logger.loggable import Loggable
 
 
@@ -185,25 +190,58 @@ class DatabaseOperations(Loggable):
         access_token = self._create_access_token(db_user.id)
         return {"access_token": access_token}
 
-    def _create_access_token(self, user_id: int) -> str:
-        """Create an access token for the user"""
-        self.logger.debug(f"Creating access token for user ID: {user_id}")
-        # Generate a secure random token
-        token_bytes = secrets.token_bytes(32)
+    def login_user(self, user: UserLogin):
+        """Login a user with email and password"""
+        email = user.email
+        password = user.password
 
-        # Convert to base64 for string representation
+        # Get the user from the database
+        stmt = select(Users).where(Users.email == email)
+        result = self.db.execute(stmt)
+        db_user = result.scalar_one_or_none()
+
+        if db_user is None:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        # Check if the password is correct
+        if not bcrypt.checkpw(
+            password.encode("utf-8"), db_user.password.encode("utf-8")
+        ):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        # Create an access token
+        token = self._create_access_token(user_id=db_user.id)
+        return token
+
+    def logout_user(self, user_id: UUID):
+        """Logout a user by deleting their active tokens"""
+        stmt = delete(Tokens).where(Tokens.user_id == user_id)
+        self.db.execute(stmt)
+        self.db.commit()
+        self.logger.info(
+            f"Removed all tokens for user ID: {str(user_id)[:10]}..."
+        )
+
+    def _create_access_token(self, user_id: UUID) -> str:
+        """Create an access token for the user"""
+        self.logger.debug(
+            f"Creating access token for user ID: {str(user_id)[:10]}..."
+        )
+        # Delete any old tokens for the user
+        self.logout_user(user_id)
+
+        # Generate new token and convert for string representation
+        token_bytes = secrets.token_bytes(32)
         token_base64 = base64.urlsafe_b64encode(token_bytes)
         token = token_base64.decode("utf-8")
         token = token.rstrip("=")
 
-        # Set the expiration time (e.g., 1 hour from now)
+        # Set the expiration time
         current_time = datetime.now()
-        expires_at = current_time + timedelta(hours=1)
+        expires_at = current_time + timedelta(hours=720)  # 30 days
 
-        # Create token record
+        # Create token in db
         db_token = Tokens(token=token, expires_at=expires_at, user_id=user_id)
-
-        # Store the token in the database
         self.db.add(db_token)
         self.db.commit()
         self.db.refresh(db_token)

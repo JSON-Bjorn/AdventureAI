@@ -12,7 +12,6 @@ from app.api.v1.validation.schemas import (
     StoryActionSegment,
     GameSession,
     SaveGame,
-    LoadGame,
 )
 from app.api.logger.logger import get_logger
 from app.api.v1.endpoints.token_validation import get_token, validate_token

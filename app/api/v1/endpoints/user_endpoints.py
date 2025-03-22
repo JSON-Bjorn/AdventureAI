@@ -12,7 +12,7 @@ from app.api.v1.validation.schemas import (
     UserCreate,
     UserUpdate,
     UserLogin,
-    UserLogout,
+    UserEmail,
 )
 
 
@@ -33,36 +33,32 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.put("/update")
 async def update_user(
-    user: UserUpdate, db: Session = Depends(get_db)
-) -> Dict[str, str]:
+    user: UserUpdate,
+    db: Session = Depends(get_db),
+    token: str = Depends(get_token),
+):
     """Update a user's information"""
     logger.info(f"Updating user information for user ID: {user.id}")
-    try:
-        # Do the thing here aswell
-        logger.warning("User update functionality not implemented yet")
-        return {"message": "User update not implemented yet"}
-    except ValueError as e:
-        logger.warning(f"User update failed for ID {user.id}: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Only catch exceptions that aren't already HTTPExceptions
-        if isinstance(e, HTTPException):
-            raise
-        logger.error(f"Internal error during user update: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Internal server error: {e}"
-        )
+    pass
 
 
 @router.post("/login")
-async def login_user(user: UserLogin) -> Dict[str, str]:
+async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     """Login a user with email and password"""
-    logger.info(f"Login User endpoint requested with email: {user.email}")
-    pass
+    logger.info(
+        f"Login User endpoint requested with email: {str(user.email)[:5]}..."
+    )
+    token = DatabaseOperations(db).login_user(user)
+    return {"token": token}
 
 
-@router.post("/logout")
-async def logout_user(user: UserLogout) -> Dict[str, str]:
+@router.delete("/logout")
+async def logout_user(
+    db: Session = Depends(get_db),
+    token: str = Depends(get_token),
+) -> Dict[str, str]:
     """Logout a user"""
-    logger.info(f"Logout User endpoint requested with email: {user.email}")
-    pass
+    logger.info(f"Logout User endpoint requested with token: {token[:10]}...")
+    user_id = validate_token(token, db, get_id=True)
+    DatabaseOperations(db).logout_user(user_id)
+    return {"message": "User logged out successfully"}

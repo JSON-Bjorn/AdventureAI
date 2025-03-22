@@ -43,8 +43,8 @@ class UserUpdate(BaseModel):
     last_name: Optional[str] = None
 
 
-class UserLogout(BaseModel):
-    token: str
+class UserEmail(BaseModel):
+    email: EmailStr
 
 
 class UserLogin(BaseModel):
@@ -55,11 +55,3 @@ class UserLogin(BaseModel):
 class SaveGame(BaseModel):
     game_session: GameSession
     image: Optional[str] = None
-
-
-class LoadGame(BaseModel):
-    token: str
-
-
-class ResetPassword(BaseModel):
-    email: EmailStr
