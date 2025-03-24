@@ -1,5 +1,4 @@
 # External imports
-from typing import Dict
 from requests import post, get
 from openai import OpenAI
 from fastapi import HTTPException

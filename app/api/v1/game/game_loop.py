@@ -3,7 +3,6 @@ from typing import Dict
 
 # Internal imports
 from app.api.v1.game.context_manager import GameContextManager
-from app.api.v1.database.operations import DatabaseOperations
 from app.api.v1.validation.schemas import StoryActionSegment, GameSession
 from app.api.logger.loggable import Loggable
 

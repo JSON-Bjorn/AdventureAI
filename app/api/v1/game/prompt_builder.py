@@ -1,6 +1,5 @@
 # External imports
 from typing import Dict, List
-from difflib import get_close_matches
 
 # Internal imports
 from app.api.v1.game.instructions import instructions
