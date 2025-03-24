@@ -1,45 +1,34 @@
 # External imports
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from typing import Dict
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 # Internal imports
 from app.db_setup import get_db
-from app.api.v1.database.operations import DatabaseOperations
-from app.api.v1.endpoints.token_validation import get_token, validate_token
 from app.api.logger.logger import get_logger
+from app.api.v1.database.operations import DatabaseOperations
+from app.api.v1.endpoints.token_validation import get_token, requires_auth
 from app.api.v1.validation.schemas import (
     UserCreate,
     UserUpdate,
     UserLogin,
-    UserEmail,
 )
 
 
 logger = get_logger("app.api.endpoints.user")
-
 router = APIRouter(tags=["users"])
 
 
 @router.post("/register")
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     """Register a new user with email and password"""
-    logger.info(f"Register User endpoint requested with email: {user.email}")
+    logger.info(f"Registering new user with email: {str(user.email)[:5]}...")
     db_ops = DatabaseOperations(db)
     result = db_ops.create_user(user)
-    logger.info(f"Successfully registered user with email: {user.email}")
+    logger.info(
+        f"Successfully registered user with email: {str(user.email)[:5]}..."
+    )
     return result
-
-
-@router.put("/update")
-async def update_user(
-    user: UserUpdate,
-    db: Session = Depends(get_db),
-    token: str = Depends(get_token),
-):
-    """Update a user's information"""
-    logger.info(f"Updating user information for user ID: {user.id}")
-    pass
 
 
 @router.post("/login")
@@ -49,16 +38,79 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
         f"Login User endpoint requested with email: {str(user.email)[:5]}..."
     )
     token = DatabaseOperations(db).login_user(user)
+    logger.info(
+        f"Successfully logged in user with email: {user.email[:5]}... "
+        "Returning token to client."
+    )
     return {"token": token}
 
 
+@router.put("/update")
+@requires_auth(get_id=True)
+async def update_user(
+    user: UserUpdate,
+    db: Session = Depends(get_db),
+    token: str = Depends(get_token),
+    user_id: int = None,
+):
+    """Update a user's information"""
+    logger.info(
+        f"Updating user information for user ID: {str(user_id)[:5]}..."
+    )
+    DatabaseOperations(db).update_user(user_id, user)
+    logger.info(
+        f"Successfully updated user information for user ID: {str(user_id)[:5]}..."
+    )
+    return {"message": "User information updated successfully"}
+
+
 @router.delete("/logout")
+@requires_auth(get_id=True)
 async def logout_user(
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
+    user_id: int = None,
 ) -> Dict[str, str]:
     """Logout a user"""
-    logger.info(f"Logout User endpoint requested with token: {token[:10]}...")
-    user_id = validate_token(token, db, get_id=True)
+    logger.info(f"Logging out user ID: {str(user_id)[:5]}...")
     DatabaseOperations(db).logout_user(user_id)
     return {"message": "User logged out successfully"}
+
+
+@router.put("/soft_delete_user")
+@requires_auth(get_id=True)
+async def soft_delete_user(
+    db: Session = Depends(get_db),
+    token: str = Depends(get_token),
+    user_id: int = None,
+) -> Dict[str, str]:
+    """Marks a user as inactive in the database"""
+    logger.info(f"Deactivating user ID: {str(user_id)[:5]}...")
+    DatabaseOperations(db).deactivate_user(user_id)
+    return {"message": "User deactivated successfully"}
+
+
+@router.put("/activate_user")
+@requires_auth(get_id=True)
+async def activate_user(
+    db: Session = Depends(get_db),
+    token: str = Depends(get_token),
+    user_id: int = None,
+) -> Dict[str, str]:
+    """Reactivates a user in the database"""
+    logger.info(f"Reactivating user ID: {str(user_id)[:5]}...")
+    DatabaseOperations(db).activate_user(user_id)
+    return {"message": "User reactivated successfully"}
+
+
+@router.delete("/hard_delete_user")
+@requires_auth(get_id=True)
+async def hard_delete_user(
+    db: Session = Depends(get_db),
+    token: str = Depends(get_token),
+    user_id: int = None,
+) -> Dict[str, str]:
+    """Deletes the users row in the database"""
+    logger.info(f"Deleting user ID: {str(user_id)[:5]}...")
+    DatabaseOperations(db).hard_delete_user(user_id)
+    return {"message": "User deleted successfully"}

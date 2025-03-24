@@ -4,7 +4,8 @@ File for functionality of endpoints.
 
 from fastapi import HTTPException, Header, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from typing import Optional
+from typing import Optional, Callable
+from functools import wraps
 from app.api.logger.logger import get_logger
 from sqlalchemy.orm import Session
 from app.api.v1.database.operations import DatabaseOperations
@@ -27,12 +28,15 @@ def validate_token(token: str, db: Session, get_id: bool = False):
 
 
 def get_token(
-    authorization: Optional[str] = Header(),
+    authorization: Optional[str] = Header(None),
     credentials: HTTPAuthorizationCredentials = Security(security),
 ):
     """Extracts the token in the request"""
     logger.info("Extracting token from header")
     if authorization is None:
+        # If the Authorization header is none, use the credential's scheme token
+        if credentials:
+            return credentials.credentials
         raise HTTPException(
             status_code=401, detail="Authorization header missing"
         )
@@ -40,3 +44,32 @@ def get_token(
     if len(parts) == 2 and parts[0].lower() == "bearer":
         return parts[1]
     return authorization
+
+
+def requires_auth(get_id: bool = False):
+    """
+    A simple decorator that handles token validation inside the endpoint.
+
+    Args:
+        get_id: If True, the user_id will be returned and passed to the function.
+    """
+
+    def decorator(func: Callable):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Get token and db
+            token = kwargs.get("token")
+            db = kwargs.get("db")
+
+            # Validate token
+            user_id = validate_token(token, db, get_id=True)
+            kwargs.pop("token", None)
+            if get_id:
+                kwargs["user_id"] = user_id
+
+            # Call the original function with updated kwargs
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
