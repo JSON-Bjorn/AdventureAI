@@ -28,7 +28,6 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    token: str
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     first_name: Optional[str] = None
