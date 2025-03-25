@@ -34,11 +34,9 @@ async def fetch_story(
         f"User ID: {str(user_id)[:5]}... "
         "was granted access to /fetch_story"
     )
-    starting_story = DatabaseOperations(db).get_start_story(
-        story.starting_story
-    )
+    response = DatabaseOperations(db).get_start_story(story.starting_story)
     logger.info("Returning starting story to client")
-    return {"story": starting_story.story, "id": None}
+    return response
 
 
 @router.post("/roll_dice")

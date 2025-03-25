@@ -15,6 +15,7 @@ from app.api.v1.database.models import (
 from datetime import datetime, timedelta
 import uuid
 import bcrypt
+from app.api.v1.database.setup.base64converter import img1, img2, img3
 
 
 def fill_db(session: Session = Depends(get_db)):
@@ -71,13 +72,16 @@ def starting_stories(session: Session):
     stories = [
         {
             "category_id": 1,  # Fantasy
+            "image": img1,
             "story": """
 You paused to catch his breath as he reached the top of the old tower. Sunlight filtered through cracked windows, illuminating the object he'd been searching for—a crown, split in two, resting on a stone pedestal.
 For years, unusual cold seasons had troubled the kingdom since the crown's separation. Village elders spoke of balance that could be restored, while others whispered that its power should be relinquished entirely.
-You studied the artifact with curiosity.""",
+You studied the artifact with curiosity.
+""",
         },
         {
             "category_id": 2,  # Horror
+            "image": img2,
             "story": """
 Your fingers clawed at the wet earth as the sinkhole widened beneath the basement floor.
 "Help!" His scream echoed, but the realtor had left hours ago.
@@ -87,6 +91,7 @@ The fall lasted seconds but felt eternal. Now, bleeding and disoriented in a cha
         },
         {
             "category_id": 3,  # Science Fiction
+            "image": img3,
             "story": """
 You crashed to the deck as the transport's rear section tore away, venting atmosphere and three screaming soldiers into the void. Emergency lights bathed the corridor in crimson.
 "Hostiles on the hull!" the Lieutenant shouted, his voice distorted through the comm as your helmet sealed automatically. "Defense turrets weren't deactivated!"

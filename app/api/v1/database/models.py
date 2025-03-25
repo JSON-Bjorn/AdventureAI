@@ -91,6 +91,7 @@ class StartingStories(Base):
         nullable=False,
     )
     story: Mapped[str] = mapped_column(String, nullable=False)
+    image: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now
     )

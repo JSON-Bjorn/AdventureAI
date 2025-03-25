@@ -269,15 +269,25 @@ class DatabaseOperations(Loggable):
 
         stmt = select(StartingStories).where(StartingStories.id == story_id)
         result = self.db.execute(stmt)
-        story = result.scalar_one_or_none()
+        starting_story = result.scalar_one_or_none()
 
-        if story is None:
+        image = starting_story.image
+        story = starting_story.story
+        id = starting_story.id
+
+        response = {
+            "image": image,
+            "story": story,
+            "id": id,
+        }
+
+        if story is None or image is None:
             self.logger.error(f"Story with ID {story_id} not found")
             raise HTTPException(
                 status_code=404,
                 detail=f"Story with ID {story_id} not found",
             )
-        return story
+        return response
 
     def load_game(self, user_id: str):
         """Loads all game sessions from a user"""
