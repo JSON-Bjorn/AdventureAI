@@ -1,6 +1,6 @@
 # External imports
 from typing import Dict
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 # Internal imports
@@ -8,6 +8,7 @@ from app.db_setup import get_db
 from app.api.logger.logger import get_logger
 from app.api.v1.database.operations import DatabaseOperations
 from app.api.v1.endpoints.token_validation import get_token, requires_auth
+from app.api.v1.endpoints.rate_limiting import rate_limit
 from app.api.v1.validation.schemas import (
     UserCreate,
     UserUpdate,
@@ -20,7 +21,10 @@ router = APIRouter(tags=["users"])
 
 
 @router.post("/register")
-async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+@rate_limit(authenticated_limit=6, unauthenticated_limit=6)
+async def register_user(
+    request: Request, user: UserCreate, db: Session = Depends(get_db)
+):
     """Register a new user with email and password"""
     logger.info(f"Registering new user with email: {str(user.email)[:5]}...")
     db_ops = DatabaseOperations(db)
@@ -32,7 +36,10 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
-async def login_user(user: UserLogin, db: Session = Depends(get_db)):
+@rate_limit(authenticated_limit=6, unauthenticated_limit=6)
+async def login_user(
+    request: Request, user: UserLogin, db: Session = Depends(get_db)
+):
     """Login a user with email and password"""
     logger.info(
         f"Login User endpoint requested with email: {str(user.email)[:5]}..."
@@ -47,7 +54,9 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
 
 @router.put("/update")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
 async def update_user(
+    request: Request,
     user: UserUpdate,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
@@ -66,7 +75,9 @@ async def update_user(
 
 @router.delete("/logout")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=6, unauthenticated_limit=6)
 async def logout_user(
+    request: Request,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
     user_id: int = None,
@@ -79,7 +90,9 @@ async def logout_user(
 
 @router.put("/soft_delete_user")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=1, unauthenticated_limit=1)
 async def soft_delete_user(
+    request: Request,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
     user_id: int = None,
@@ -92,7 +105,9 @@ async def soft_delete_user(
 
 @router.put("/activate_user")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=1, unauthenticated_limit=1)
 async def activate_user(
+    request: Request,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
     user_id: int = None,
@@ -105,7 +120,9 @@ async def activate_user(
 
 @router.delete("/hard_delete_user")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=1, unauthenticated_limit=1)
 async def hard_delete_user(
+    request: Request,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
     user_id: int = None,

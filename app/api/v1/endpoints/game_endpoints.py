@@ -1,5 +1,5 @@
 # External imports
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from typing import Dict, List
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -10,6 +10,7 @@ from app.api.logger.logger import get_logger
 from app.api.v1.game.game_loop import SceneGenerator
 from app.api.v1.database.operations import DatabaseOperations
 from app.api.v1.endpoints.token_validation import get_token, requires_auth
+from app.api.v1.endpoints.rate_limiting import rate_limit
 from app.api.v1.validation.schemas import (
     StartingStory,
     StoryActionSegment,
@@ -23,7 +24,9 @@ router = APIRouter(tags=["game"])
 
 @router.post("/fetch_story")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
 async def fetch_story(
+    request: Request,
     story: StartingStory,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
@@ -41,7 +44,9 @@ async def fetch_story(
 
 @router.post("/roll_dice")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
 async def roll_dice(
+    request: Request,
     story: StoryActionSegment,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
@@ -58,7 +63,9 @@ async def roll_dice(
 
 @router.post("/generate_new_scene")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=6, unauthenticated_limit=6)
 async def generate_new_scene(
+    request: Request,
     game_session: GameSession,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
@@ -76,7 +83,9 @@ async def generate_new_scene(
 
 @router.post("/save_game")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
 async def save_game(
+    request: Request,
     game: SaveGame,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
@@ -92,7 +101,9 @@ async def save_game(
 
 @router.get("/load_game")
 @requires_auth(get_id=True)
+@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
 async def load_game(
+    request: Request,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
     user_id: int = None,

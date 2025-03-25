@@ -134,6 +134,9 @@ class Users(Base):
     game_sessions: Mapped[List["GameSessions"]] = relationship(
         "GameSessions", back_populates="user", cascade="all, delete-orphan"
     )
+    rate_limits: Mapped[List["RateLimit"]] = relationship(
+        "RateLimit", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class GameSessions(Base):
@@ -234,4 +237,27 @@ class Payments(Base):
     user: Mapped["Users"] = relationship("Users", back_populates="payments")
     payment_method: Mapped["PaymentMethods"] = relationship(
         "PaymentMethods", back_populates="payments"
+    )
+
+
+class RateLimit(Base):
+    __tablename__ = "rate_limits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(
+        SQLUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    ip_address: Mapped[str] = mapped_column(String, nullable=True)
+    endpoint_path: Mapped[str] = mapped_column(String, nullable=False)
+    requests: Mapped[List[int]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now, onupdate=datetime.now
+    )
+
+    # Relationship
+    user: Mapped["Users"] = relationship(
+        "Users", back_populates="rate_limits"
     )
