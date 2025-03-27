@@ -113,7 +113,7 @@ class DatabaseOperations(Loggable):
         db_user = result.scalar_one_or_none()
 
         if db_user is None:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            raise HTTPException(status_code=404, detail="User not found")
 
         # Check if the password is correct
         if not bcrypt.checkpw(
@@ -249,23 +249,31 @@ class DatabaseOperations(Loggable):
     def save_game_route(self, data: SaveGame, user_id):
         """Routes incoming save-requests to the correct method"""
         if data.game_session.id is None:
-            self._save_new_game(data, user_id)
+            game_id = self._save_new_game(data, user_id)
         else:
-            self._save_old_game(data, user_id)
+            game_id = self._save_old_game(data, user_id)
+        return game_id
 
     def _save_new_game(self, data: SaveGame, user_id):
         """Saves entire new game sessions to the database"""
         # Extract the game session data for easy access
-        stmt = insert(GameSessions).values(
-            user_id=user_id,
-            last_image=data.image,
-            protagonist_name=data.game_session.protagonist_name,
-            session_name=data.game_session.session_name,
-            inventory=data.game_session.inventory,
-            stories=data.game_session.scenes,
+        stmt = (
+            insert(GameSessions)
+            .values(
+                user_id=user_id,
+                last_image=data.image,
+                protagonist_name=data.game_session.protagonist_name,
+                session_name=data.game_session.session_name,
+                inventory=data.game_session.inventory,
+                stories=data.game_session.scenes,
+            )
+            .returning(GameSessions.id)
         )
-        self.db.execute(stmt)
+        result = self.db.execute(stmt)
+        game_id = result.scalar_one()
         self.db.commit()
+
+        return game_id
 
     def get_start_story(self, story_id: str):
         """Retrieves a starting story from the database"""
@@ -340,6 +348,9 @@ class DatabaseOperations(Loggable):
         )
         self.db.execute(stmt)
         self.db.commit()
+
+        game_id = data.game_session.id
+        return game_id
 
     def _hash_password(self, password: str) -> str:
         password_bytes = password.encode("utf-8")

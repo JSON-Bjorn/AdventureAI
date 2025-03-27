@@ -83,20 +83,20 @@ async def generate_new_scene(
 
 @router.post("/save_game")
 @requires_auth(get_id=True)
-@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
+@rate_limit(authenticated_limit=20, unauthenticated_limit=20)
 async def save_game(
     request: Request,
     game: SaveGame,
     db: Session = Depends(get_db),
     token: str = Depends(get_token),
     user_id: int = None,
-) -> Dict[str, str]:
+) -> Dict[str, int]:
     """Saves stories and user input to the database."""
     logger.info(
         f"User ID: {str(user_id)[:5]}... was granted access to /save_game"
     )
-    DatabaseOperations(db).save_game_route(game, user_id)
-    return {"message": "Game saved successfully"}
+    game_id = DatabaseOperations(db).save_game_route(game, user_id)
+    return {"game_id": game_id}
 
 
 @router.get("/load_game")

@@ -142,7 +142,9 @@ class Users(Base):
 class GameSessions(Base):
     __tablename__ = "game_sessions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         SQLUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
