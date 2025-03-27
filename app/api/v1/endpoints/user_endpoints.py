@@ -31,15 +31,21 @@ async def register_user(
     logger.info(f"Registering new user with email: {str(user.email)[:5]}...")
     db_ops = DatabaseOperations(db)
     result = db_ops.create_user(user)
-    logger.info(f"Successfully registered user with email: {str(user.email)[:5]}...")
+    logger.info(
+        f"Successfully registered user with email: {str(user.email)[:5]}..."
+    )
     return result
 
 
 @router.post("/login")
 @rate_limit(authenticated_limit=6, unauthenticated_limit=6)
-async def login_user(request: Request, user: UserLogin, db: Session = Depends(get_db)):
+async def login_user(
+    request: Request, user: UserLogin, db: Session = Depends(get_db)
+):
     """Login a user with email and password"""
-    logger.info(f"Login User endpoint requested with email: {str(user.email)[:5]}...")
+    logger.info(
+        f"Login User endpoint requested with email: {str(user.email)[:5]}..."
+    )
     token = DatabaseOperations(db).login_user(user)
     logger.info(
         f"Successfully logged in user with email: {user.email[:5]}... "
@@ -59,7 +65,9 @@ async def update_user(
     user_id: int = None,
 ):
     """Update a user's information"""
-    logger.info(f"Updating user information for user ID: {str(user_id)[:5]}...")
+    logger.info(
+        f"Updating user information for user ID: {str(user_id)[:5]}..."
+    )
     DatabaseOperations(db).update_user(user_id, user)
     logger.info(
         f"Successfully updated user information for user ID: {str(user_id)[:5]}..."
@@ -139,8 +147,10 @@ async def get_user_profile(
     """Returns the user's profile information"""
     logger.info(f"Getting user profile for user ID: {str(user_id)[:5]}...")
 
-    try:
-        return DatabaseOperations(db).get_user_profile(user_id)
-    except Exception as e:
-        logger.error(f"Error getting user profile: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve user profile")
+    # Raisa inte exceptions i endpoints.
+    # Du raisar HttpException 404 i db.ops
+    # När errorn propagerar upp hit så fångar du den som 'Exception' och gör om den till 500.
+    # Raisa istället errors där de sker och låt frontend hantera dem.
+    user: Dict[str, Any] = DatabaseOperations(db).get_user_profile(user_id)
+
+    return user

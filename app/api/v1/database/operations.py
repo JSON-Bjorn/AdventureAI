@@ -49,7 +49,9 @@ class DatabaseOperations(Loggable):
             )
         else:
             user_id = token_data.user_id
-            self.logger.info(f"Token validated for user: {str(user_id)[:10]}...")
+            self.logger.info(
+                f"Token validated for user: {str(user_id)[:10]}..."
+            )
             return user_id
 
     def create_user(self, user_data: UserCreate) -> Dict:
@@ -128,7 +130,9 @@ class DatabaseOperations(Loggable):
         stmt = delete(Tokens).where(Tokens.user_id == user_id)
         self.db.execute(stmt)
         self.db.commit()
-        self.logger.info(f"Removed all tokens for user ID: {str(user_id)[:10]}...")
+        self.logger.info(
+            f"Removed all tokens for user ID: {str(user_id)[:10]}..."
+        )
 
     def update_user(self, user_id: UUID, user: UserUpdate):
         """Updates a user in the db"""
@@ -142,7 +146,12 @@ class DatabaseOperations(Loggable):
             nud["password"] = self._hash_password(nud["password"])
 
         # Update the user in the db
-        stmt = update(Users).where(Users.id == user_id).values(**nud).returning(Users)
+        stmt = (
+            update(Users)
+            .where(Users.id == user_id)
+            .values(**nud)
+            .returning(Users)
+        )
         result = self.db.execute(stmt)
         updated_user = result.scalar_one_or_none()
         self.db.commit()
@@ -228,7 +237,9 @@ class DatabaseOperations(Loggable):
             )
         else:
             self.db.commit()
-            self.logger.info(f"Successfully deleted user ID: {str(user_id)[:10]}...")
+            self.logger.info(
+                f"Successfully deleted user ID: {str(user_id)[:10]}..."
+            )
             return {"message": "User deleted successfully"}
 
     def save_game_route(self, data: SaveGame, user_id):
@@ -335,7 +346,9 @@ class DatabaseOperations(Loggable):
 
     def _create_access_token(self, user_id: UUID) -> str:
         """Create an access token for the user"""
-        self.logger.debug(f"Creating access token for user ID: {str(user_id)[:10]}...")
+        self.logger.debug(
+            f"Creating access token for user ID: {str(user_id)[:10]}..."
+        )
         # Delete any old tokens for the user
         self.logout_user(user_id)
 
@@ -367,7 +380,9 @@ class DatabaseOperations(Loggable):
     def _check_existing_user(self, email: str) -> bool:
         """Check if a user with the given email already exists"""
         self.logger.debug(f"Checking if user exists with email: {email}")
-        existing_user = self.db.query(Users).filter(Users.email == email).first()
+        existing_user = (
+            self.db.query(Users).filter(Users.email == email).first()
+        )
 
         return bool(existing_user)
 
@@ -381,13 +396,17 @@ class DatabaseOperations(Loggable):
         Returns:
             Dictionary containing user profile information
         """
-        user = self.db.query(Users).filter(Users.id == user_id).first()
+        stmt = select(Users).where(Users.id == user_id)
+        result = self.db.execute(stmt)
+        user = result.scalar_one_or_none()
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         # Format the date to YYYY-MM-DD
-        created_date = user.created_at.strftime("%Y-%m-%d") if user.created_at else None
+        created_date = (
+            user.created_at.strftime("%Y-%m-%d") if user.created_at else None
+        )
 
         return {
             "email": user.email,
