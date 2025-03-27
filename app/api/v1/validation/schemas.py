@@ -45,3 +45,12 @@ class UserLogin(BaseModel):
 class SaveGame(BaseModel):
     game_session: GameSession
     image: Optional[str] = None
+
+
+class UserProfileResponse(BaseModel):
+    """Schema for user profile response"""
+
+    email: str
+    first_name: str = ""
+    last_name: str = ""
+    registered_at: Optional[str] = None
