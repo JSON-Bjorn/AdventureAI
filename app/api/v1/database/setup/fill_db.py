@@ -74,7 +74,7 @@ def starting_stories(session: Session):
             "category_id": 1,  # Fantasy
             "image": img1,
             "story": """
-You paused to catch his breath as he reached the top of the old tower. Sunlight filtered through cracked windows, illuminating the object he'd been searching for—a crown, split in two, resting on a stone pedestal.
+You paused to catch your breath as you reached the top of the old tower. Sunlight filtered through cracked windows, illuminating the object you had been searching for—a crown, split in two, resting on a stone pedestal.
 For years, unusual cold seasons had troubled the kingdom since the crown's separation. Village elders spoke of balance that could be restored, while others whispered that its power should be relinquished entirely.
 You studied the artifact with curiosity.
 """,
@@ -84,9 +84,9 @@ You studied the artifact with curiosity.
             "image": img2,
             "story": """
 Your fingers clawed at the wet earth as the sinkhole widened beneath the basement floor.
-"Help!" His scream echoed, but the realtor had left hours ago.
-As he slipped further down, his flashlight beam caught glimpses of impossible architecture below—stone corridors older than human civilization, walls inscribed with symbols that hurt his eyes, and something massive shifting in the darkness.
-The fall lasted seconds but felt eternal. Now, bleeding and disoriented in a chamber that shouldn't exist, they heard scraping sounds approaching from multiple tunnels.
+"Help!" your scream echoed, but the realtor had left hours ago.
+As you slipped further down, your flashlight beam caught glimpses of impossible architecture below—stone corridors older than human civilization, walls inscribed with symbols that hurt your eyes, and something massive shifting in the darkness.
+The fall lasted seconds but felt eternal. Now, bleeding and disoriented in a chamber that shouldn't exist, you heard scraping sounds approaching from multiple tunnels.
 """,
         },
         {
@@ -94,8 +94,8 @@ The fall lasted seconds but felt eternal. Now, bleeding and disoriented in a cha
             "image": img3,
             "story": """
 You crashed to the deck as the transport's rear section tore away, venting atmosphere and three screaming soldiers into the void. Emergency lights bathed the corridor in crimson.
-"Hostiles on the hull!" the Lieutenant shouted, his voice distorted through the comm as your helmet sealed automatically. "Defense turrets weren't deactivated!"
-His first mission, and the Ascendant station had already killed half the squad. Something had hacked their approach codes.
+"Hostiles on the hull!" the Lieutenant shouted, his voice distorted through the comm as your helmet sealed automatically. "Defense turrets were deactivated!"
+Your first mission, and the Ascendant station had already killed half the squad. Something had hacked their approach codes.
 A section of wall buckled inward with a tortured screech of metal. Behind it, you glimpsed movement—neither human nor mechanical—slithering through the breach.
 """,
         },

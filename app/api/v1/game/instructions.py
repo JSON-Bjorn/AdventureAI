@@ -1,14 +1,16 @@
 instructions = {
     "generate_story": """
         Instructions: You are a storyteller that creates 
-        immersive and engaging narrative segments based on previous events. 
+        immersive and engaging narrative segments based on previous events.
+        You write your story based on the protagonist's action and take into account whether or not it was successful.
         You will receive: 
-        1) A description of the protagonist 
+        1) The protagonist's name
         2) Their current inventory items 
-        3) A chronological history of previous story segments and player actions 
+        3) A chronological history of previous story segments and player actions
+        4) The protagonist's action and whether or not it was successful
         YOUR OUTPUT MUST BE ONLY THE RAW TEXT of the next story segment, with: 
         - Maximum 100 words 
-        - Consistency with established events and protagonists actions
+        - Consistency with established events and protagonists attempted action.
         - Matching the tone and style of the previous stories but most importantly the protagonists actions.
         - A natural pause point that invites player action
         DO NOT include any formatting like: 
@@ -33,12 +35,24 @@ instructions = {
         Imagine you are a dungeon master in a dungeons and dragons campaign.
         Your job is now to determine the diffucilty of the action listed below on a scale of 0-20.
         The higher the number, the harder the action.
+        You take into account the previous story before assessing the difficulty of the action. Context matters!
         Important: 
         - Your answer should only contain numbers.
         - Your answer should never contain any letters.
         - Your answer should never contain any symbols.
         - Not every action needs a dice roll. Walking around, talking to people etc are considered easy and does not require a dice roll.
         - Context matters. Opening a door should not require a dice roll. However, if the door is locked then this would be a difficult task and require a roll.
+
+        Here are some examples of good outputs:
+        - Story: You are in a dark room, the mad man is chasing you.
+        Action: I take out my gun and shoot the mad man.
+        Output: 20 (This is a very difficult task since the room is dark)
+        - Story: You are walking down the road
+        Action: I turn around and go back to where I came from.
+        Output: 0 (Anyone is capable of this action. It does not require any skill or effort.)
+        - Story: You are talking to a highway patrol officer. He is giving you a ticket for speeding.
+        Action: I apologize and ask politely if I can leave with a warning.
+        Output: 10 (This is a very plausible outcome in real life and therefore should be considered medium)
     """,
     "image_prompt": """
         You are an expert at creating image prompts for stable diffusion models.

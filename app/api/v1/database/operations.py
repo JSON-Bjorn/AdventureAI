@@ -121,6 +121,10 @@ class DatabaseOperations(Loggable):
         ):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
+        # Reactivate user if they were previously deactivated
+        if not db_user.is_active:
+            self.activate_user(db_user.id)
+
         # Create an access token
         token = self._create_access_token(user_id=db_user.id)
         return token
@@ -345,7 +349,7 @@ class DatabaseOperations(Loggable):
         return hashed_password_str
 
     def _create_access_token(self, user_id: UUID) -> str:
-        """Create an access token for the user"""
+        """Create an access token for the user and deletes all their previous tokens"""
         self.logger.debug(
             f"Creating access token for user ID: {str(user_id)[:10]}..."
         )

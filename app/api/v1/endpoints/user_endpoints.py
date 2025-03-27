@@ -147,10 +147,6 @@ async def get_user_profile(
     """Returns the user's profile information"""
     logger.info(f"Getting user profile for user ID: {str(user_id)[:5]}...")
 
-    # Raisa inte exceptions i endpoints.
-    # Du raisar HttpException 404 i db.ops
-    # När errorn propagerar upp hit så fångar du den som 'Exception' och gör om den till 500.
-    # Raisa istället errors där de sker och låt frontend hantera dem.
     user: Dict[str, Any] = DatabaseOperations(db).get_user_profile(user_id)
 
     return user
