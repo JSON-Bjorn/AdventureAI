@@ -20,7 +20,9 @@ def validate_token(token: str, db: Session, get_id: bool = False):
     logger.info("Validating token")
     user_id = DatabaseOperations(db).validate_token(token)
     if get_id:
-        logger.info(f"Token validated, returning user id: {user_id}")
+        logger.info(
+            f"Token validated, returning user id: {str(user_id)[:5]}..."
+        )
         return user_id
     else:
         logger.info("Token validated")

@@ -37,7 +37,7 @@ async def fetch_story(
         f"User ID: {str(user_id)[:5]}... "
         "was granted access to /fetch_story"
     )
-    response = DatabaseOperations(db).get_start_story(story.starting_story)
+    response = DatabaseOperations(db).get_start_story(story.story_id)
     logger.info("Returning starting story to client")
     return response
 

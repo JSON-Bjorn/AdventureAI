@@ -4,7 +4,7 @@ from uuid import UUID
 
 
 class StartingStory(BaseModel):
-    starting_story: int
+    story_id: int
 
 
 class StoryActionSegment(BaseModel):
