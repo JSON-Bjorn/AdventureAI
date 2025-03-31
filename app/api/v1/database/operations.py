@@ -319,6 +319,7 @@ class DatabaseOperations(Loggable):
                     "session_name": save.session_name,
                     "stories": save.stories,
                     "image": save.last_image,
+                    "last_played": save.updated_at
                 }
             )
         return response_data
