@@ -34,7 +34,7 @@ python main.py
 Detta skapar tabellerna i databasen (se till att du har rätt struktur i din .env fil (se exemplet i .env.example))
 
 ```bash
-python -m app/api/v1/database/setup/fill_db.py
+python -m app.api.v1.database.setup.fill_db
 ```
 
 Detta kommando fyller databasen med dummy data.
