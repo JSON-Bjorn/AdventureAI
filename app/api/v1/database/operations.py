@@ -135,6 +135,11 @@ class DatabaseOperations(Loggable):
                     )
                 continue
 
+        # Delete the email_token from the database
+        stmt = delete(EmailTokens).where(EmailTokens.token == token.token)
+        self.db.execute(stmt)
+        self.db.commit()
+
         # Get access token
         access_token = self._create_access_token(db_user.id)
         return {"access_token": access_token}
