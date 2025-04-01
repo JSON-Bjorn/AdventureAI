@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     MAILGUN_API_KEY: str
     MAILGUN_DOMAIN: str
     MAILGUN_EMAIL: str
+    FRONTEND_URL: str
 
 
 settings = Settings()
