@@ -3,6 +3,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from uuid import UUID
+from pydantic import ValidationError
 
 # Internal imports
 from app.db_setup import get_db
@@ -36,25 +37,39 @@ async def register_user(
     return {"message": "Email token created successfully"}
 
 
-@router.post("/verify_token")
+@router.post("/verify_token/{token}")
 @rate_limit(authenticated_limit=6, unauthenticated_limit=6)
 async def verify_token(
-    request: Request, token: EmailToken, db: Session = Depends(get_db)
+    request: Request,
+    token: str,  # Path parameter must be a scalar type
+    db: Session = Depends(get_db),
 ):
     """Verify an email token and create a user in db"""
-    auth_token = DatabaseOperations(db).verify_token(token)
-    return auth_token
+    logger.info(f"Received token verification request. Token: {token[:10]}...")
+    try:
+        # Validates token using Pydantic model
+        token_data = EmailToken(token=token)  # This will validate the token format
+        logger.info("Token format validated successfully")
+
+        auth_token = DatabaseOperations(db).create_user_from_token(token_data.token)
+        logger.info("User created and authenticated successfully")
+        return auth_token
+    except ValidationError as e:
+        logger.error(f"Token validation failed: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid token format")
+    except HTTPException as e:
+        logger.error(f"Token verification failed: {str(e.detail)}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during token verification: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/login")
 @rate_limit(authenticated_limit=6, unauthenticated_limit=6)
-async def login_user(
-    request: Request, user: UserLogin, db: Session = Depends(get_db)
-):
+async def login_user(request: Request, user: UserLogin, db: Session = Depends(get_db)):
     """Login a user with email and password"""
-    logger.info(
-        f"Login User endpoint requested with email: {str(user.email)[:5]}..."
-    )
+    logger.info(f"Login User endpoint requested with email: {str(user.email)[:5]}...")
     token = DatabaseOperations(db).login_user(user)
     logger.info(
         f"Successfully logged in user with email: {user.email[:5]}... "
@@ -74,9 +89,7 @@ async def update_user(
     user_id: int = None,
 ):
     """Update a user's information"""
-    logger.info(
-        f"Updating user information for user ID: {str(user_id)[:5]}..."
-    )
+    logger.info(f"Updating user information for user ID: {str(user_id)[:5]}...")
     DatabaseOperations(db).update_user(user_id, user)
     logger.info(
         f"Successfully updated user information for user ID: {str(user_id)[:5]}..."
