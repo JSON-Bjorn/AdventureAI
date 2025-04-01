@@ -67,6 +67,18 @@ def get_primary_key_value(target):
         return hex(id(target))
 
 
+class EmailTokens(Base):
+    __tablename__ = "email_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String, nullable=False)
+    password: Mapped[str] = mapped_column(String, nullable=False)
+    token: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now
+    )
+
+
 class AdventureCategories(Base):
     __tablename__ = "adventure_categories"
 

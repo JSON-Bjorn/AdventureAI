@@ -10,11 +10,13 @@ from app.api.logger.logger import get_logger
 from app.api.v1.database.operations import DatabaseOperations
 from app.api.v1.endpoints.token_validation import get_token, requires_auth
 from app.api.v1.endpoints.rate_limiting import rate_limit
+from app.api.v1.email.email_services import EmailServices
 from app.api.v1.validation.schemas import (
     UserCreate,
     UserUpdate,
     UserLogin,
     UserProfileResponse,
+    EmailToken,
 )
 
 
@@ -27,14 +29,21 @@ router = APIRouter(tags=["users"])
 async def register_user(
     request: Request, user: UserCreate, db: Session = Depends(get_db)
 ):
-    """Register a new user with email and password"""
+    """Creates a email token in the database"""
     logger.info(f"Registering new user with email: {str(user.email)[:5]}...")
-    db_ops = DatabaseOperations(db)
-    result = db_ops.create_user(user)
-    logger.info(
-        f"Successfully registered user with email: {str(user.email)[:5]}..."
-    )
-    return result
+    token = DatabaseOperations(db).create_email_token(user)
+    EmailServices().send_activation_email(user.email, token)
+    return {"message": "Email token created successfully"}
+
+
+@router.post("/verify_token")
+@rate_limit(authenticated_limit=6, unauthenticated_limit=6)
+async def verify_token(
+    request: Request, token: EmailToken, db: Session = Depends(get_db)
+):
+    """Verify an email token and create a user in db"""
+    auth_token = DatabaseOperations(db).verify_token(token)
+    return auth_token
 
 
 @router.post("/login")

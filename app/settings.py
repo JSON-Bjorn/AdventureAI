@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     STABLE_DIFFUSION_PORT: str
     MISTRAL_PORT: str
+    MAILGUN_API_KEY: str
+    MAILGUN_DOMAIN: str
+    MAILGUN_EMAIL: str
 
 
 settings = Settings()

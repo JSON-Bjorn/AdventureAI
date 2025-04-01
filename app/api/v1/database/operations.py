@@ -14,17 +14,20 @@ import base64
 
 # Internal imports
 from app.api.logger.loggable import Loggable
+
 from app.api.v1.database.models import (
     Users,
     Tokens,
     StartingStories,
     GameSessions,
+    EmailTokens,
 )
 from app.api.v1.validation.schemas import (
     UserCreate,
     SaveGame,
     UserLogin,
     UserUpdate,
+    EmailToken,
 )
 
 
@@ -54,25 +57,59 @@ class DatabaseOperations(Loggable):
             )
             return user_id
 
-    def create_user(self, user_data: UserCreate) -> Dict:
-        """Create a new user in the database"""
-        self.logger.info(f"Creating new user with email: {user_data.email}")
+    def create_email_token(self, user: UserCreate) -> Dict:
+        """Creates a email token in the database"""
+        self.logger.info(f"Creating email token for user: {user.email}")
         # Validate email format
-        if not self._validate_email(user_data.email):
+        if not self._validate_email(user.email):
             raise HTTPException(
                 status_code=400,
                 detail="Invalid email format",
             )
 
         # Check if user already exists
-        if self._check_existing_user(user_data.email):
+        if self._check_existing_user(user.email):
             raise HTTPException(
                 status_code=400,
                 detail="User with this email already exists",
             )
 
         # Hash the password
-        hashed_pw = self._hash_password(user_data.password)
+        hashed_pw = self._hash_password(user.password)
+
+        # Generate new token and convert for string representation
+        token_bytes = secrets.token_bytes(32)
+        token_base64 = base64.urlsafe_b64encode(token_bytes)
+        token = token_base64.decode("utf-8")
+        token = token.rstrip("=")
+
+        # Post the user to the email_tokens table
+        stmt = insert(EmailTokens).values(
+            email=user.email,
+            password=hashed_pw,
+            token=token,
+        )
+        self.db.execute(stmt)
+        self.db.commit()
+
+        return token
+
+    def create_user(self, token: EmailToken) -> Dict:
+        """Create a new user in the database"""
+        self.logger.info(f"Creating new user with email: {token.email}")
+
+        # Get the user info from email_tokens table
+        stmt = select(EmailTokens).where(EmailTokens.token == token.token)
+        result = self.db.execute(stmt)
+        user_data = result.scalar_one_or_none()
+
+        if not user_data:
+            raise HTTPException(
+                status_code=404, detail="Email token not found"
+            )
+
+        if user_data.expires_at < datetime.now():
+            raise HTTPException(status_code=401, detail="Email token expired")
 
         # Create and post user to db
         for attempt in range(3):
@@ -80,7 +117,7 @@ class DatabaseOperations(Loggable):
                 db_user = Users(
                     id=uuid.uuid4(),
                     email=user_data.email,
-                    password=hashed_pw,
+                    password=user_data.password,
                 )
                 self.db.add(db_user)
                 self.db.commit()
@@ -319,7 +356,7 @@ class DatabaseOperations(Loggable):
                     "session_name": save.session_name,
                     "stories": save.stories,
                     "image": save.last_image,
-                    "last_played": save.updated_at
+                    "last_played": save.updated_at,
                 }
             )
         return response_data
