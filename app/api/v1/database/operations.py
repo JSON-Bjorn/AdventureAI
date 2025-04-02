@@ -27,7 +27,6 @@ from app.api.v1.validation.schemas import (
     SaveGame,
     UserLogin,
     UserUpdate,
-    EmailToken,
 )
 
 
@@ -60,30 +59,24 @@ class DatabaseOperations(Loggable):
     def create_email_token(self, user: UserCreate) -> Dict:
         """Creates a email token in the database"""
         self.logger.info(f"Creating email token for user: {user.email}")
-        # Validate email format
         if not self._validate_email(user.email):
             raise HTTPException(
                 status_code=400,
                 detail="Invalid email format",
             )
 
-        # Check if user already exists
         if self._check_existing_user(user.email):
             raise HTTPException(
                 status_code=400,
                 detail="User with this email already exists",
             )
 
-        # Hash the password
         hashed_pw = self._hash_password(user.password)
-
-        # Generate new token and convert for string representation
         token_bytes = secrets.token_bytes(32)
         token_base64 = base64.urlsafe_b64encode(token_bytes)
         token = token_base64.decode("utf-8")
         token = token.rstrip("=")
 
-        # Post the user to the email_tokens table
         stmt = insert(EmailTokens).values(
             email=user.email,
             password=hashed_pw,
@@ -96,7 +89,6 @@ class DatabaseOperations(Loggable):
 
     def create_user(self, token: str) -> Dict:
         """Create a new user in the database"""
-        # Get the user info from email_tokens table
         stmt = select(EmailTokens).where(EmailTokens.token == token)
         result = self.db.execute(stmt)
         user_data = result.scalar_one_or_none()
@@ -109,7 +101,6 @@ class DatabaseOperations(Loggable):
 
         self.logger.info(f"Creating new user: {user_data.email[:10]}...")
 
-        # Create and post user to db
         for attempt in range(3):
             try:
                 db_user = Users(
@@ -133,39 +124,32 @@ class DatabaseOperations(Loggable):
                     )
                 continue
 
-        # Delete the email_token from the database
         stmt = delete(EmailTokens).where(EmailTokens.token == token.token)
         self.db.execute(stmt)
         self.db.commit()
 
-        # Get access token
         access_token = self._create_access_token(db_user.id)
         return {"access_token": access_token}
 
     def login_user(self, user: UserLogin):
         """Login a user with email and password"""
-        email = user.email
-        password = user.password
+        self.logger.info(f"Logging in user: {user.email[:10]}...")
 
-        # Get the user from the database
-        stmt = select(Users).where(Users.email == email)
+        stmt = select(Users).where(Users.email == user.email)
         result = self.db.execute(stmt)
         db_user = result.scalar_one_or_none()
 
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Check if the password is correct
         if not bcrypt.checkpw(
-            password.encode("utf-8"), db_user.password.encode("utf-8")
+            user.password.encode("utf-8"), db_user.password.encode("utf-8")
         ):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        # Reactivate user if they were previously deactivated
-        if not db_user.is_active:
+        if db_user.is_active is False:
             self.activate_user(db_user.id)
 
-        # Create an access token
         token = self._create_access_token(user_id=db_user.id)
         return token
 
@@ -180,8 +164,7 @@ class DatabaseOperations(Loggable):
 
     def update_user(self, user_id: UUID, user: UserUpdate):
         """Updates a user in the db"""
-        # Extract the new-user-data
-        nud = {}
+        nud = {}  # New-User-Data
         for key, value in user.model_dump().items():
             if value is not None:
                 nud[key] = value
@@ -189,7 +172,6 @@ class DatabaseOperations(Loggable):
         if "password" in nud:
             nud["password"] = self._hash_password(nud["password"])
 
-        # Update the user in the db
         stmt = (
             update(Users)
             .where(Users.id == user_id)
@@ -204,9 +186,9 @@ class DatabaseOperations(Loggable):
             return updated_user
         else:
             self.logger.critical(
-                f"A token tied to user ID: {user_id} successfully "
-                "authenticated access to a protected endpoint. "
-                "But the user with this ID does not exist in the database. "
+                f"Token for user ID: {user_id} passed authorization check "
+                "but the user_id does not exist in the database.\n"
+                "Removing all tokens for this user.."
             )
             self.logout_user(user_id)
             raise HTTPException(
@@ -228,10 +210,11 @@ class DatabaseOperations(Loggable):
 
         if updated_user is None:
             self.logger.critical(
-                f"A token tied to user ID: {user_id} successfully "
-                "authenticated access to a protected endpoint (/activate_user). "
-                "But the user with this ID does not exist in the database. "
+                f"Token for user ID: {user_id} passed authorization check "
+                "but the user_id does not exist in the database.\n"
+                "Removing all tokens for this user.."
             )
+            self.logout_user(user_id)
             raise HTTPException(
                 status_code=404,
                 detail="User not found",
@@ -296,7 +279,6 @@ class DatabaseOperations(Loggable):
 
     def _save_new_game(self, data: SaveGame, user_id):
         """Saves entire new game sessions to the database"""
-        # Extract the game session data for easy access
         stmt = (
             insert(GameSessions)
             .values(
@@ -343,12 +325,10 @@ class DatabaseOperations(Loggable):
 
     def load_game(self, user_id: str):
         """Loads all game sessions from a user"""
-        # Get the game saves from database
         stmt = select(GameSessions).where(GameSessions.user_id == user_id)
         result = self.db.execute(stmt)
         all_saves: List[GameSessions] = result.scalars().all()
 
-        # Convert and return the saves as readable data
         response_data = []
         for save in all_saves:
             response_data.append(
@@ -366,17 +346,14 @@ class DatabaseOperations(Loggable):
 
     def _save_old_game(self, data: SaveGame, user_id):
         """Saves scenes to an already existing game session"""
-        # Get the current stories from db row
         stmt = select(GameSessions.stories).where(
             GameSessions.id == data.game_session.id
         )
         result = self.db.execute(stmt)
         old_scenes = result.scalar_one_or_none()
 
-        # Combine the two lists
         updated_scenes = old_scenes + data.game_session.scenes
 
-        # Build the query for post
         stmt = (
             update(GameSessions)
             .where(GameSessions.id == data.game_session.id)
@@ -405,20 +382,15 @@ class DatabaseOperations(Loggable):
         self.logger.debug(
             f"Creating access token for user ID: {str(user_id)[:10]}..."
         )
-        # Delete any old tokens for the user
         self.logout_user(user_id)
 
-        # Generate new token and convert for string representation
         token_bytes = secrets.token_bytes(32)
         token_base64 = base64.urlsafe_b64encode(token_bytes)
         token = token_base64.decode("utf-8")
         token = token.rstrip("=")
-
-        # Set the expiration time
         current_time = datetime.now()
         expires_at = current_time + timedelta(hours=720)  # 30 days
 
-        # Create token in db
         db_token = Tokens(token=token, expires_at=expires_at, user_id=user_id)
         self.db.add(db_token)
         self.db.commit()
@@ -459,7 +431,6 @@ class DatabaseOperations(Loggable):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Format the date to YYYY-MM-DD
         created_date = (
             user.created_at.strftime("%Y-%m-%d") if user.created_at else None
         )
