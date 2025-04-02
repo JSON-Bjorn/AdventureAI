@@ -124,7 +124,7 @@ class DatabaseOperations(Loggable):
                     )
                 continue
 
-        stmt = delete(EmailTokens).where(EmailTokens.token == token.token)
+        stmt = delete(EmailTokens).where(EmailTokens.token == token)
         self.db.execute(stmt)
         self.db.commit()
 
