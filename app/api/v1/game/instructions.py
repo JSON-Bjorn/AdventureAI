@@ -91,9 +91,6 @@ instructions = {
                 - Lurking
                 - Nervous
                 - Ominous
-                - Playful
-                - Quirky
-                - Upbeat
             Intense:
                 - Chaotic
                 - Combat
@@ -105,7 +102,7 @@ instructions = {
 
         Examples of good answers:
         'calm/dreamy'
-        'medium/playful'
+        'medium/lurking'
         'intense/chaotic'
 
         Examples of bad answers:
