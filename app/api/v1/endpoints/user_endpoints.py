@@ -50,9 +50,7 @@ async def verify_token(
     token_data = EmailToken(token=token)
     logger.info("Token format validated successfully")
 
-    auth_token = DatabaseOperations(db).create_user_from_token(
-        token_data.token
-    )
+    auth_token = DatabaseOperations(db).create_user(token_data.token)
     logger.info("User created and authenticated successfully")
     return auth_token
 
