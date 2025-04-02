@@ -1,9 +1,8 @@
 # External imports
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from uuid import UUID
-from pydantic import ValidationError
 
 # Internal imports
 from app.db_setup import get_db
@@ -41,7 +40,7 @@ async def register_user(
 @rate_limit(authenticated_limit=6, unauthenticated_limit=6)
 async def verify_token(
     request: Request,
-    token: str,  # Path parameter must be a scalar type
+    token: str,
     db: Session = Depends(get_db),
 ):
     """Verify an email token and create a user in db"""
