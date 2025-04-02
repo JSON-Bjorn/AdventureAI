@@ -122,7 +122,7 @@ def users(session: Session):
         {
             "id": uuid.uuid4(),
             "email": "mmabjorn@hotmail.com",
-            "password": hash_password("påsgris"),
+            "password": hash_password("påsgris123"),
             "first_name": "Björn",
             "last_name": "Revell",
             "is_admin": True,
@@ -131,7 +131,7 @@ def users(session: Session):
         {
             "id": uuid.uuid4(),
             "email": "felix.f.soderstrom@gmail.com",
-            "password": hash_password("påsgris"),
+            "password": hash_password("påsgris123"),
             "first_name": "Felix",
             "last_name": "Söderström",
             "is_admin": True,
