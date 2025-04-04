@@ -9,7 +9,7 @@ from app.api.logger.loggable import Loggable
 
 class SceneGenerator(Loggable):
     def __init__(self, db=None):
-        super().__init__()  # self.logger
+        super().__init__()
         self.manager = GameContextManager()
         self.logger.info("SceneGenerator initialized")
 
@@ -25,12 +25,10 @@ class SceneGenerator(Loggable):
         self.logger.info(
             f"Generating the {len(game_session.scenes) + 1}th scene."
         )
-
         story: str = await self.manager.new_story(game_session)
         compressed_story: str = await self.manager.compress(story)
         image: str = await self.manager.generate_image(story)
         music_path: str = await self.manager.analyze_mood(story)
-
         return {
             "story": story,
             "compressed_story": compressed_story,

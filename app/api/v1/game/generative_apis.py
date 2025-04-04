@@ -26,15 +26,10 @@ class TextGeneration(Loggable):
     """Everything LLM-related"""
 
     def __init__(self) -> None:
-        super().__init__()  # self.logger
-        # Load the instructions
+        super().__init__()
         self.instructions = instructions
         self.logger.info("TextGeneration initialized")
-
-        # Set the endpoint
         self.endpoint = settings.MISTRAL_PORT
-
-        # If OpenAI API is preferred
         self.openai = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     async def api_call(self, prompt: str, max_tokens: int = 1000):
@@ -99,8 +94,7 @@ class ImageGeneration(Loggable):
     """Everything image-related"""
 
     def __init__(self) -> None:
-        super().__init__()  # Initialize the logger
-        # The endpoint for the image generation API
+        super().__init__()
         self.endpoint = settings.STABLE_DIFFUSION_PORT
         self.logger.info(
             "ImageGeneration initialized with endpoint: {self.endpoint}"
@@ -154,7 +148,7 @@ class SoundGeneration(Loggable):
     """Everything sound-related"""
 
     def __init__(self) -> None:
-        super().__init__()  # self.logger
+        super().__init__()
         self.logger.info("SoundGeneration initialized")
 
     async def generate_speech(self):

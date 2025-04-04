@@ -11,7 +11,7 @@ class PromptBuilder(Loggable):
     """Class that handles all prompt building before a LLM-call"""
 
     def __init__(self):
-        super().__init__()  # self.logger
+        super().__init__()
         self.instructions = instructions
         self.logger.info("PromptBuilder initialized")
 
@@ -20,11 +20,9 @@ class PromptBuilder(Loggable):
         self.logger.info(
             f"Building dice prompt for action: {recent_scene.action}"
         )
-        # Dissect context and get instructions
         instructions = self.instructions["determine_dice_roll"]
         story = recent_scene.story
         action = recent_scene.action
-
         prompt = (
             f"Instructions: {instructions}\n\n"
             f"Story: {story}\n"
@@ -36,30 +34,23 @@ class PromptBuilder(Loggable):
     def get_story_prompt(self, game_session: GameSession) -> str:
         """Builds the prompt for new stories"""
         self.logger.info("Building story prompt")
-        # Define variables
         instructions: str = self.instructions["generate_story"]
         name: str = game_session.protagonist_name
         inv: str = ", ".join(game_session.inventory)
         recent_scenes: List[Dict] = game_session.scenes[-10:]
         action: str = recent_scenes[-1]["action"]
         success: bool = recent_scenes[-1]["dice_success"]
-
-        # Format the prompt
         prompt = (
             f"Instructions: {instructions}\n\n"
             f"Protagonist name: {name}\n"
             f"Protagonist's inventory: {inv}\n\n"
             "The story so far:\n"
         )
-        # Add the 10 last stories in chronological order to prompt
         for i, scene in enumerate(recent_scenes, 1):
             prompt += f"Story {i}: {scene['story']}\n\n"
-
-        # Add the current action and its success (this is what we're generating a story for)
         prompt += f"Protagonist's action based on the last story: {action}\n"
         prompt += f"Action successful: {success}\n\n"
         prompt += f"Story {len(recent_scenes) + 1}: Please write this story based on what just happened.\n\n"
-
         self.logger.debug(f"Story prompt built with length: {len(prompt)})")
         return prompt
 
@@ -80,7 +71,6 @@ class PromptBuilder(Loggable):
         self.logger.info(
             f"Building image prompt for story with length: {len(story)})"
         )
-        # Get instructions and prompt
         instructions = self.instructions["image_prompt"]
         prompt = f"""
             Instructions: {instructions}
@@ -95,8 +85,6 @@ class PromptBuilder(Loggable):
         self.logger.info(
             f"Building mood analysis prompt for story with length: {len(story)})"
         )
-        # Get instructions and prompt
         instructions = self.instructions["analyze_mood"]
         prompt = f"Instructions: {instructions}\nStory: {story}"
-
         return prompt

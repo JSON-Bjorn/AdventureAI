@@ -33,7 +33,7 @@ instructions = {
     """,
     "determine_dice_roll": """
         Imagine you are a dungeon master in a dungeons and dragons campaign.
-        Your job is now to determine the diffucilty of the action listed below on a scale of 0-20.
+        Your job is now to determine the diffucilty of the action listed below on a scale of 1-20.
         The higher the number, the harder the action.
         You take into account the previous story before assessing the difficulty of the action. Context matters!
         Important: 
