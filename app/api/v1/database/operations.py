@@ -206,7 +206,8 @@ class DatabaseOperations(Loggable):
             self.logger.info(
                 f"Successfully deleted user ID: {str(user_id)[:10]}..."
             )
-            return {"message": "User deleted successfully"}
+        self._delete_email_tokens(user_id)
+        return {"message": "User deleted successfully"}
 
     def _validate_email(self, email: str) -> bool:
         """Validates email format"""
@@ -292,6 +293,11 @@ class DatabaseOperations(Loggable):
         self.db.execute(stmt)
         self.db.commit()
         return token
+
+    def _delete_email_tokens(self, user_id: UUID):
+        stmt = delete(EmailTokens).where(EmailTokens.user_id == user_id)
+        self.db.execute(stmt)
+        self.db.commit()
 
     def _validate_email_token(self, token: str) -> Users:
         """Checks if an email exists in databaseand returns the database object"""
