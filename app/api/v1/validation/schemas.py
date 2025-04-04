@@ -48,8 +48,6 @@ class SaveGame(BaseModel):
 
 
 class UserProfileResponse(BaseModel):
-    """Schema for user profile response"""
-
     email: str
     first_name: str = ""
     last_name: str = ""
