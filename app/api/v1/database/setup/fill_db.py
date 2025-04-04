@@ -27,9 +27,6 @@ def fill_db(session: Session = Depends(get_db)):
     starting_stories(session)
     session.commit()
 
-    user_ids = users(session)
-    session.commit()
-
     game_sessions(session)
     session.commit()
 
@@ -104,51 +101,6 @@ A section of wall buckled inward with a tortured screech of metal. Behind it, yo
         session.execute(insert(StartingStories).values(**story))
     session.flush()
     print("Starting stories inserted successfully")
-
-
-def users(session: Session):
-    print("Inserting users...")
-
-    # Create hashed passwords
-    def hash_password(password: str) -> str:
-        salt = bcrypt.gensalt()
-        hashed = bcrypt.hashpw(password.encode(), salt)
-        return hashed.decode()
-
-    # Store user IDs to return them for use in dependent tables
-    saved_user_ids = []
-
-    users = [
-        {
-            "id": uuid.uuid4(),
-            "email": "mmabjorn@hotmail.com",
-            "password": hash_password("påsgris123"),
-            "first_name": "Björn",
-            "last_name": "Revell",
-            "is_admin": True,
-            "all_actions": ["develop a game", "comtemplate life choices"],
-        },
-        {
-            "id": uuid.uuid4(),
-            "email": "felix.f.soderstrom@gmail.com",
-            "password": hash_password("påsgris123"),
-            "first_name": "Felix",
-            "last_name": "Söderström",
-            "is_admin": True,
-            "all_actions": [
-                "develop a game",
-                "wallow on what could have been",
-            ],
-        },
-    ]
-
-    for user in users:
-        saved_user_ids.append(user["id"])
-        session.execute(insert(Users).values(**user))
-
-    session.flush()
-    print("Users inserted successfully")
-    return saved_user_ids
 
 
 def game_sessions(session: Session):
