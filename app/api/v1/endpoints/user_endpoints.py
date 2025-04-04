@@ -86,11 +86,11 @@ async def update_user(
 ):
     """Update a user's information"""
     logger.info(
-        f"Updating user information for user ID: {str(user_id)[:5]}..."
+        f"Updating user information for user ID: {str(user_id)[:10]}..."
     )
     DatabaseOperations(db).update_user(user_id, user)
     logger.info(
-        f"Successfully updated user information for user ID: {str(user_id)[:5]}..."
+        f"Successfully updated user information for user ID: {str(user_id)[:10]}..."
     )
     return {"message": "User information updated successfully"}
 
@@ -105,7 +105,7 @@ async def logout_user(
     user_id: int = None,
 ) -> Dict[str, str]:
     """Logout a user"""
-    logger.info(f"Logging out user ID: {str(user_id)[:5]}...")
+    logger.info(f"Logging out user ID: {str(user_id)[:10]}...")
     DatabaseOperations(db).logout_user(user_id)
     return {"message": "User logged out successfully"}
 
@@ -120,7 +120,7 @@ async def soft_delete_user(
     user_id: int = None,
 ) -> Dict[str, str]:
     """Marks a user as inactive in the database"""
-    logger.info(f"Deactivating user ID: {str(user_id)[:5]}...")
+    logger.info(f"Deactivating user ID: {str(user_id)[:10]}...")
     DatabaseOperations(db).deactivate_user(user_id)
     return {"message": "User deactivated successfully"}
 
@@ -135,7 +135,7 @@ async def activate_user(
     user_id: int = None,
 ) -> Dict[str, str]:
     """Reactivates a user in the database"""
-    logger.info(f"Reactivating user ID: {str(user_id)[:5]}...")
+    logger.info(f"Reactivating user ID: {str(user_id)[:10]}...")
     DatabaseOperations(db).activate_user(user_id)
     return {"message": "User reactivated successfully"}
 
@@ -150,7 +150,7 @@ async def hard_delete_user(
     user_id: int = None,
 ) -> Dict[str, str]:
     """Deletes the users row in the database"""
-    logger.info(f"Deleting user ID: {str(user_id)[:5]}...")
+    logger.info(f"Deleting user ID: {str(user_id)[:10]}...")
     DatabaseOperations(db).hard_delete_user(user_id)
     return {"message": "User deleted successfully"}
 
@@ -165,10 +165,8 @@ async def get_user_profile(
     user_id: UUID = None,
 ) -> Dict[str, Any]:
     """Returns the user's profile information"""
-    logger.info(f"Getting user profile for user ID: {str(user_id)[:5]}...")
-
+    logger.info(f"Getting user profile for user ID: {str(user_id)[:10]}...")
     user: Dict[str, Any] = DatabaseOperations(db).get_user_profile(user_id)
-
     return user
 
 
@@ -195,7 +193,7 @@ async def reset_password(
 ) -> Dict[str, str]:
     """Resets a user's password"""
     logger.info(
-        f"Resetting password for email token: {data.email_token[:5]}..."
+        f"Resetting password for email token: {data.email_token[:10]}..."
     )
     user = DatabaseOperations(db).reset_password(
         data.email_token, data.new_password

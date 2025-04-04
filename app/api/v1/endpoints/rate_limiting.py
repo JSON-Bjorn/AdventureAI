@@ -12,17 +12,15 @@ from uuid import UUID
 
 # Internal imports
 from app.api.logger.logger import get_logger
+from app.api.v1.database.models import RateLimit
+from app.db_setup import get_db
 from app.api.v1.endpoints.token_validation import (
     get_token,
     validate_token,
 )
-from app.api.v1.database.models import RateLimit
-from app.db_setup import get_db
 
-# Logger
 logger = get_logger("app.api.endpoints.rate_limiting")
 
-# For hiding the Authorization header in Swagger UI
 authorization_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 
@@ -45,23 +43,16 @@ def get_rate_limit_key(
         - ip_address: String or None
         - endpoint_path: String
     """
-    # Get client IP
     client_ip = request.client.host
-
-    # Get endpoint path, defaulting to the request path
     if not endpoint_path:
         endpoint_path = request.url.path
-
-    # Create rate limit key dict
     if user_id:
-        # For authenticated users, use user_id
         return {
             "user_id": user_id,
             "ip_address": None,
             "endpoint_path": endpoint_path,
         }
     else:
-        # For unauthenticated users, use IP address
         return {
             "user_id": None,
             "ip_address": client_ip,
@@ -92,8 +83,6 @@ def check_and_update_rate_limit(
     """
     current_time = int(time.time())
     cutoff_time = current_time - window_seconds
-
-    # Build query based on whether we're using user_id or ip_address
     if key["user_id"]:
         stmt = select(RateLimit).where(
             RateLimit.user_id == key["user_id"],
@@ -109,14 +98,10 @@ def check_and_update_rate_limit(
     rate_limit_record = result.scalar_one_or_none()
 
     if rate_limit_record:
-        # Clean up old timestamps
         valid_timestamps = [
             ts for ts in rate_limit_record.requests if ts > cutoff_time
         ]
-
-        # Check if limit exceeded
         if len(valid_timestamps) >= limit:
-            # Calculate reset time based on oldest timestamp
             if valid_timestamps:
                 oldest_timestamp = min(valid_timestamps)
                 reset_time = oldest_timestamp + window_seconds - current_time
@@ -129,11 +114,7 @@ def check_and_update_rate_limit(
                 "total": limit,
                 "remaining": 0,
             }
-
-        # Add current timestamp and update record
         valid_timestamps.append(current_time)
-
-        # Update the record with new timestamps
         stmt = (
             update(RateLimit)
             .where(RateLimit.id == rate_limit_record.id)
@@ -149,7 +130,6 @@ def check_and_update_rate_limit(
             "remaining": limit - len(valid_timestamps),
         }
     else:
-        # Create new rate limit record
         new_record = RateLimit(
             user_id=key["user_id"],
             ip_address=key["ip_address"],
@@ -167,7 +147,6 @@ def check_and_update_rate_limit(
         }
 
 
-# A dependency that performs rate limiting for unauthenticated endpoints
 def create_rate_limiter(
     authenticated_limit: int = 100,
     unauthenticated_limit: int = 20,
@@ -200,36 +179,23 @@ def create_rate_limiter(
         db: Session = Depends(get_db),
         auth_header: Optional[str] = Security(authorization_header),
     ):
-        # Determine if request is authenticated by checking for a valid token
         user_id = None
         try:
             if auth_header:
-                # Extract token using token_validation.py's function
                 token = get_token(auth_header, None)
                 if token:
-                    # Validate token and get user_id
                     user_id = validate_token(token, db, get_id=True)
-                    # Store the user_id in request state for potential use by other middlewares/dependencies
                     request.state.user_id = user_id
         except Exception as e:
             logger.warning(f"Authentication check failed: {str(e)}")
-            # Continue as unauthenticated if token validation fails
-
-        # Apply appropriate rate limit
         limit = authenticated_limit if user_id else unauthenticated_limit
-
-        # Get rate limit key
         rate_limit_key = get_rate_limit_key(request, user_id)
-
-        # Check rate limit and update database
         rate_limit_info = check_and_update_rate_limit(
             db=db,
             key=rate_limit_key,
             limit=limit,
             window_seconds=window_seconds,
         )
-
-        # If limit exceeded, return 429 response
         if rate_limit_info["exceeded"]:
             reset_time = rate_limit_info["reset_time"]
             raise HTTPException(
@@ -242,21 +208,16 @@ def create_rate_limiter(
                     "X-RateLimit-Reset": str(int(time.time() + reset_time)),
                 },
             )
-
-        # Store rate limit info in request state for headers
         request.state.rate_limit_info = {
             "limit": limit,
             "remaining": rate_limit_info["remaining"],
             "reset": int(time.time() + window_seconds),
         }
-
-        # Return None since this is just a validation dependency
         return None
 
     return rate_limiter
 
 
-# A dependency that performs rate limiting for authenticated endpoints
 def create_authenticated_rate_limiter(
     authenticated_limit: int = 100,
     window_seconds: int = 60,
@@ -290,27 +251,19 @@ def create_authenticated_rate_limiter(
         request: Request,
         db: Session = Depends(get_db),
     ):
-        # Get user_id from request state (set by authentication)
         user_id = getattr(request.state, "user_id", None)
 
         if user_id is None:
             logger.warning(
                 "No user_id found in request state. This rate limiter should be used after authentication."
             )
-            # Fallback to IP-based limiting if somehow no user_id is available
-
-        # Get rate limit key
         rate_limit_key = get_rate_limit_key(request, user_id)
-
-        # Check rate limit and update database
         rate_limit_info = check_and_update_rate_limit(
             db=db,
             key=rate_limit_key,
             limit=authenticated_limit,
             window_seconds=window_seconds,
         )
-
-        # If limit exceeded, return 429 response
         if rate_limit_info["exceeded"]:
             reset_time = rate_limit_info["reset_time"]
             raise HTTPException(
@@ -323,21 +276,16 @@ def create_authenticated_rate_limiter(
                     "X-RateLimit-Reset": str(int(time.time() + reset_time)),
                 },
             )
-
-        # Store rate limit info in request state for headers
         request.state.rate_limit_info = {
             "limit": authenticated_limit,
             "remaining": rate_limit_info["remaining"],
             "reset": int(time.time() + window_seconds),
         }
-
-        # Return None since this is just a validation dependency
         return None
 
     return auth_rate_limiter
 
 
-# Middleware to add rate limit headers to responses
 async def add_rate_limit_headers(request: Request, call_next):
     """
     Middleware to add rate limit headers to responses.
@@ -345,10 +293,7 @@ async def add_rate_limit_headers(request: Request, call_next):
 
     app.middleware("http")(add_rate_limit_headers)
     """
-    # Process the request and get the response
     response = await call_next(request)
-
-    # Add rate limit headers if available
     rate_limit_info = getattr(request.state, "rate_limit_info", None)
     if rate_limit_info:
         response.headers["X-RateLimit-Limit"] = str(rate_limit_info["limit"])
@@ -356,11 +301,9 @@ async def add_rate_limit_headers(request: Request, call_next):
             rate_limit_info["remaining"]
         )
         response.headers["X-RateLimit-Reset"] = str(rate_limit_info["reset"])
-
     return response
 
 
-# For backward compatibility, keeping the decorator pattern
 def rate_limit(
     authenticated_limit: int = 100,
     unauthenticated_limit: int = 20,
@@ -395,16 +338,11 @@ def rate_limit(
         async def wrapper(
             request: Request, db: Session = Depends(get_db), *args, **kwargs
         ):
-            # Create and use the rate limiter
             rate_limiter = create_rate_limiter(
                 authenticated_limit, unauthenticated_limit, window_seconds
             )
             await rate_limiter(request, db)
-
-            # Execute the endpoint function
             response = await func(request, db=db, *args, **kwargs)
-
-            # Add rate limit headers to response
             if isinstance(response, JSONResponse) and hasattr(
                 request.state, "rate_limit_info"
             ):
@@ -414,7 +352,6 @@ def rate_limit(
                     info["remaining"]
                 )
                 response.headers["X-RateLimit-Reset"] = str(info["reset"])
-
             return response
 
         return wrapper
@@ -422,7 +359,6 @@ def rate_limit(
     return decorator
 
 
-# For backward compatibility, keeping the decorator pattern
 def optimized_rate_limit_with_auth(
     authenticated_limit: int = 100,
     window_seconds: int = 60,
@@ -461,21 +397,13 @@ def optimized_rate_limit_with_auth(
         async def wrapper(
             request: Request, db: Session = Depends(get_db), *args, **kwargs
         ):
-            # Get user_id from kwargs (set by requires_auth or similar)
             user_id = kwargs.get("user_id")
-            # Store it in request state for the rate limiter to use
             request.state.user_id = user_id
-
-            # Create and use the rate limiter
             auth_rate_limiter = create_authenticated_rate_limiter(
                 authenticated_limit, window_seconds
             )
             await auth_rate_limiter(request, db)
-
-            # Execute the endpoint function
             response = await func(request, db=db, *args, **kwargs)
-
-            # Add rate limit headers to response
             if isinstance(response, JSONResponse) and hasattr(
                 request.state, "rate_limit_info"
             ):
@@ -493,7 +421,6 @@ def optimized_rate_limit_with_auth(
     return decorator
 
 
-# Example using the dependency approach - much cleaner in Swagger UI
 async def example_public_endpoint_with_dependency(
     request: Request,
     db: Session = Depends(get_db),
@@ -503,7 +430,6 @@ async def example_public_endpoint_with_dependency(
     return {"message": "Hello, world!"}
 
 
-# Example of the decorator pattern - less ideal for Swagger UI
 @rate_limit(authenticated_limit=50, unauthenticated_limit=5)
 async def example_public_endpoint(
     request: Request, db: Session = Depends(get_db)
@@ -512,7 +438,6 @@ async def example_public_endpoint(
     return {"message": "Hello, world!"}
 
 
-# Note for distributed deployments:
 """
 IMPORTANT DISTRIBUTED DEPLOYMENT CONSIDERATIONS:
 
