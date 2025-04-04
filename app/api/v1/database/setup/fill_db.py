@@ -1,45 +1,34 @@
+"""
+Script for filling the database with neccesary starting-data.
+"""
+
+# External imports
 from fastapi import Depends
 from app.db_setup import get_db
 from sqlalchemy.orm import Session
 from sqlalchemy import insert, text
+
+# Internal imports
+from app.api.v1.database.setup.base64converter import img1, img2, img3
 from app.api.v1.database.models import (
     AdventureCategories,
     StartingStories,
-    Users,
-    GameSessions,
     Reviews,
-    Tokens,
     PaymentMethods,
-    Payments,
 )
-from datetime import datetime, timedelta
-import uuid
-import bcrypt
-from app.api.v1.database.setup.base64converter import img1, img2, img3
 
 
 def fill_db(session: Session = Depends(get_db)):
-    # Execute each function in sequence and commit after each step
-    # to ensure foreign keys are available for dependent tables
     categories(session)
     session.commit()
 
     starting_stories(session)
     session.commit()
 
-    game_sessions(session)
-    session.commit()
-
     reviews(session)
     session.commit()
 
-    tokens(session)
-    session.commit()
-
     payment_methods(session)
-    session.commit()
-
-    payments(session)
     session.commit()
 
     print("All data has been successfully inserted!")
@@ -47,7 +36,6 @@ def fill_db(session: Session = Depends(get_db)):
 
 def categories(session: Session):
     print("Inserting categories...")
-    # First clear existing data if any
     session.execute(
         text("TRUNCATE adventure_categories RESTART IDENTITY CASCADE")
     )
@@ -65,7 +53,6 @@ def categories(session: Session):
 
 def starting_stories(session: Session):
     print("Inserting starting stories...")
-    # Make sure StartingStories has the correct structure (no action field)
     stories = [
         {
             "category_id": 1,  # Fantasy
@@ -103,85 +90,8 @@ A section of wall buckled inward with a tortured screech of metal. Behind it, yo
     print("Starting stories inserted successfully")
 
 
-def game_sessions(session: Session):
-    print("Inserting game sessions...")
-    # Get user IDs from database
-    user_result = session.execute(text("SELECT id FROM users")).fetchall()
-    user_ids = [row[0] for row in user_result]
-
-    if not user_ids:
-        print("No users found, skipping game sessions")
-        return
-
-    if len(user_ids) < 2:
-        print("Not enough users found, adding only available game sessions")
-
-    games = []
-
-    if len(user_ids) > 0:
-        games.append(
-            {
-                "user_id": user_ids[0],
-                "session_name": "Björn's Quest",
-                "protagonist_name": "Sir Pryse; bat. 6th",
-                "inventory": ["backdoor", "spit", "will-power"],
-                "stories": [
-                    {
-                        "story": "You enter the dark cave, sword drawn.",
-                        "action": "enter cave",
-                        "dice_success": True,
-                    },
-                    {
-                        "story": "Dark grumbling is heard from the depths; 'OUCH WRONG CAVE!'",
-                        "action": "go even deeper",
-                        "dice_success": False,
-                    },
-                    {
-                        "story": "You turn around and leave the cave. Defeated, you fall asleep on the couch.",
-                        "action": "file for divorce",
-                        "dice_success": False,
-                    },
-                ],
-            }
-        )
-
-    if len(user_ids) > 1:
-        games.append(
-            {
-                "user_id": user_ids[1],
-                "session_name": "Felix's Quest",
-                "protagonist_name": "Captain Cuck, sitter of the chair",
-                "inventory": ["lube", "camera", "penis pump"],
-                "stories": [
-                    {
-                        "story": "You observe your wife and the stranger from the nearby closet.",
-                        "action": "Touch myself",
-                        "dice_success": True,
-                    },
-                    {
-                        "story": "You are about to cum when the girl turns to you and says 'I'm sorry, I'm not into that'.",
-                        "action": "i do a sick one-liner and join the fun",
-                        "dice_success": False,
-                    },
-                    {
-                        "story": "You leave the room in shame and confusion.",
-                        "action": "I peep through the keyhole",
-                        "dice_success": True,
-                    },
-                ],
-            }
-        )
-
-    for game in games:
-        session.execute(insert(GameSessions).values(**game))
-
-    session.flush()
-    print("Game sessions inserted successfully")
-
-
 def reviews(session: Session):
     print("Inserting reviews...")
-    # Get user IDs from database - using proper SQLAlchemy 2.0 syntax with text()
     user_result = session.execute(text("SELECT id FROM users")).fetchall()
     user_ids = [row[0] for row in user_result]
 
@@ -216,39 +126,6 @@ def reviews(session: Session):
     print("Reviews inserted successfully")
 
 
-def tokens(session: Session):
-    print("Inserting tokens...")
-    # Get user IDs from database
-    user_result = session.execute(text("SELECT id FROM users")).fetchall()
-    user_ids = [row[0] for row in user_result]
-
-    if not user_ids:
-        print("No users found, skipping tokens")
-        return
-
-    now = datetime.now()
-    tokens = []
-
-    # Create tokens only for users that exist
-    for i, user_id in enumerate(user_ids):
-        tokens.append(
-            {
-                "user_id": user_id,
-                "token": str(uuid.uuid4()),
-                "expires_at": now
-                + timedelta(
-                    days=(i + 1) * 7
-                ),  # Different expiration for each token
-            }
-        )
-
-    for token in tokens:
-        session.execute(insert(Tokens).values(**token))
-
-    session.flush()
-    print("Tokens inserted successfully")
-
-
 def payment_methods(session: Session):
     print("Inserting payment methods...")
     # First clear existing data if any
@@ -265,39 +142,6 @@ def payment_methods(session: Session):
 
     session.flush()
     print("Payment methods inserted successfully")
-
-
-def payments(session: Session):
-    print("Inserting payments...")
-    # Get user IDs from database
-    user_result = session.execute(text("SELECT id FROM users")).fetchall()
-    user_ids = [row[0] for row in user_result]
-
-    if not user_ids:
-        print("No users found, skipping payments")
-        return
-
-    payments = []
-
-    # Add payments only for users that exist
-    payment_amounts = [19.99, 9.99]
-
-    for i, user_id in enumerate(user_ids):
-        if i < len(payment_amounts):
-            payments.append(
-                {
-                    "user_id": user_id,
-                    "payment_method_id": (i % 4)
-                    + 1,  # Cycle through payment methods 1-4
-                    "amount": payment_amounts[i],
-                }
-            )
-
-    for payment in payments:
-        session.execute(insert(Payments).values(**payment))
-
-    session.flush()
-    print("Payments inserted successfully")
 
 
 if __name__ == "__main__":
