@@ -72,10 +72,7 @@ class DatabaseOperations(Loggable):
             )
 
         hashed_pw = self._hash_password(user.password)
-        token_bytes = secrets.token_bytes(32)
-        token_base64 = base64.urlsafe_b64encode(token_bytes)
-        token = token_base64.decode("utf-8")
-        token = token.rstrip("=")
+        token = self.generate_token()
 
         stmt = insert(EmailTokens).values(
             email=user.email,
@@ -87,8 +84,43 @@ class DatabaseOperations(Loggable):
 
         return token
 
-    def create_user(self, token: str) -> Dict:
-        """Create a new user in the database"""
+    def update_email_token(self, email: str) -> str:
+        """Updates the email token in the database when a user requests a password reset"""
+        self.logger.info(f"Updating email token for user: {email}")
+
+        stmt = select(EmailTokens).where(EmailTokens.email == email)
+        result = self.db.execute(stmt)
+        token_data = result.scalar_one_or_none()
+
+        if not token_data:
+            raise HTTPException(
+                status_code=404, detail="Email not registered"
+            )
+
+        new_token = self.generate_token()
+
+        stmt = (
+            update(EmailTokens)
+            .where(EmailTokens.email == email)
+            .values(
+                token=new_token,
+                created_at=datetime.now(),
+            )
+        )
+        self.db.execute(stmt)
+        self.db.commit()
+
+        return new_token
+
+    def generate_token(self) -> str:
+        token_bytes = secrets.token_bytes(32)
+        token_base64 = base64.urlsafe_b64encode(token_bytes)
+        token = token_base64.decode("utf-8")
+        token = token.rstrip("=")
+        return token
+
+    def _validate_email_token(self, token: str) -> Users:
+        """Checks if an email exists in databaseand returns the database object"""
         stmt = select(EmailTokens).where(EmailTokens.token == token)
         result = self.db.execute(stmt)
         user_data = result.scalar_one_or_none()
@@ -98,6 +130,12 @@ class DatabaseOperations(Loggable):
 
         if user_data.created_at + timedelta(minutes=60) < datetime.now():
             raise HTTPException(status_code=401, detail="Token expired")
+
+        return user_data
+
+    def create_user(self, token: str) -> Dict:
+        """Create a new user in the database"""
+        user_data = self._validate_email_token(token)
 
         self.logger.info(f"Creating new user: {user_data.email[:10]}...")
 
@@ -378,16 +416,13 @@ class DatabaseOperations(Loggable):
         return hashed_password_str
 
     def _create_access_token(self, user_id: UUID) -> str:
-        """Create an access token for the user and deletes all their previous tokens"""
+        """Create an access token in the database and deletes all their previous tokens"""
         self.logger.debug(
             f"Creating access token for user ID: {str(user_id)[:10]}..."
         )
         self.logout_user(user_id)
 
-        token_bytes = secrets.token_bytes(32)
-        token_base64 = base64.urlsafe_b64encode(token_bytes)
-        token = token_base64.decode("utf-8")
-        token = token.rstrip("=")
+        token = self.generate_token()
         current_time = datetime.now()
         expires_at = current_time + timedelta(hours=720)  # 30 days
 
@@ -441,3 +476,18 @@ class DatabaseOperations(Loggable):
             "last_name": user.last_name or "",
             "registered_at": created_date,
         }
+
+    def reset_password(self, token: str, password: str):
+        """Changes a user's password"""
+        user_data = self._validate_email_token(token)
+        hashed_pw = self._hash_password(password)
+
+        stmt = (
+            update(Users)
+            .where(Users.email == user_data.email)
+            .values(password=hashed_pw)
+        )
+        self.db.execute(stmt)
+        self.db.commit()
+
+        return user_data

@@ -168,3 +168,33 @@ async def get_user_profile(
     user: Dict[str, Any] = DatabaseOperations(db).get_user_profile(user_id)
 
     return user
+
+
+@router.post("/send_password_reset_email")
+@rate_limit(authenticated_limit=1, unauthenticated_limit=1)
+async def send_password_reset_email(
+    request: Request,
+    email: str,
+    db: Session = Depends(get_db),
+) -> Dict[str, str]:
+    """Sends out a link for password reset"""
+    logger.info(f"Email: {email[:5]} requested a password reset")
+    email_token = DatabaseOperations(db).update_email_token(email)
+    EmailServices().send_reset_email(email, email_token)
+    return {"message": "Password reset email sent successfully"}
+
+
+@router.post("/reset_password/{token}")  # Might be wokring. time for test
+@rate_limit(authenticated_limit=1, unauthenticated_limit=1)
+async def reset_password(
+    request: Request,
+    new_password: str,
+    email_token: str,
+    db: Session = Depends(get_db),
+) -> Dict[str, str]:
+    """Resets a user's password"""
+    logger.info(f"Resetting password for email token: {email_token[:5]}...")
+    user = DatabaseOperations(db).reset_password(email_token, new_password)
+    user_data = UserLogin(email=user.email, password=new_password)
+    auth_token = DatabaseOperations(db).login_user(user_data)
+    return {"token": auth_token}
