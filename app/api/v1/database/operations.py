@@ -188,9 +188,14 @@ class DatabaseOperations(Loggable):
 
     def hard_delete_user(self, user_id: UUID):
         """Hard deletes a user by removing their row from the database"""
+        get_stmt = select(Users).where(Users.id == user_id)
+        result = self.db.execute(get_stmt)
+        user = result.scalar_one_or_none()
+        email = user.email
+
         self.logout_user(user_id)
-        stmt = delete(Users).where(Users.id == user_id)
-        result = self.db.execute(stmt)
+        delete_stmt = delete(Users).where(Users.id == user_id)
+        result = self.db.execute(delete_stmt)
         if result.rowcount == 0:
             self.logger.critical(
                 f"A token tied to user ID: {user_id} successfully "
@@ -206,7 +211,7 @@ class DatabaseOperations(Loggable):
             self.logger.info(
                 f"Successfully deleted user ID: {str(user_id)[:10]}..."
             )
-        self._delete_email_tokens(user_id)
+        self._delete_email_tokens(email)
         return {"message": "User deleted successfully"}
 
     def _validate_email(self, email: str) -> bool:
@@ -294,8 +299,8 @@ class DatabaseOperations(Loggable):
         self.db.commit()
         return token
 
-    def _delete_email_tokens(self, user_id: UUID):
-        stmt = delete(EmailTokens).where(EmailTokens.user_id == user_id)
+    def _delete_email_tokens(self, email: str):
+        stmt = delete(EmailTokens).where(EmailTokens.email == email)
         self.db.execute(stmt)
         self.db.commit()
 
