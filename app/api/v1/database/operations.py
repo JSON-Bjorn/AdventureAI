@@ -490,4 +490,7 @@ class DatabaseOperations(Loggable):
         self.db.execute(stmt)
         self.db.commit()
 
+        # New secret token so that noone can reset the password during the 1hr window
+        self.update_email_token(user_data.email)
+
         return user_data
