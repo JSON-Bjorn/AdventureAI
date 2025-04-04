@@ -54,14 +54,11 @@ def log_delete(mapper, connection, target):
 def get_primary_key_value(target):
     """Extract the primary key value from a model instance."""
     try:
-        # Most common primary key name
         if hasattr(target, "id"):
             return target.id
-        # Try to find any attribute with 'id' in the name
         for attr_name in dir(target):
             if "id" in attr_name.lower() and not attr_name.startswith("_"):
                 return getattr(target, attr_name)
-        # If no id found, return object hash
         return hex(id(target))
     except Exception as e:
         logger.warning(f"Error extracting primary key: {str(e)}")
