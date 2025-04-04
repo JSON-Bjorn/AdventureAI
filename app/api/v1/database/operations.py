@@ -86,7 +86,7 @@ class DatabaseOperations(Loggable):
 
     def update_email_token(self, email: str) -> str:
         """Updates the email token in the database when a user requests a password reset"""
-        self.logger.info(f"Updating email token for user: {email}")
+        self.logger.info(f"Updating email token for user: {email[:5]}...")
 
         stmt = select(EmailTokens).where(EmailTokens.email == email)
         result = self.db.execute(stmt)
@@ -161,10 +161,6 @@ class DatabaseOperations(Loggable):
                         detail="User creation failed when posting to database.",
                     )
                 continue
-
-        stmt = delete(EmailTokens).where(EmailTokens.token == token)
-        self.db.execute(stmt)
-        self.db.commit()
 
         access_token = self._create_access_token(db_user.id)
         return {"access_token": access_token}

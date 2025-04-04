@@ -17,6 +17,8 @@ from app.api.v1.validation.schemas import (
     UserLogin,
     UserProfileResponse,
     EmailToken,
+    UserEmail,
+    PasswordReset,
 )
 
 
@@ -170,31 +172,34 @@ async def get_user_profile(
     return user
 
 
-@router.post("/send_password_reset_email")
-@rate_limit(authenticated_limit=1, unauthenticated_limit=1)
-async def send_password_reset_email(
+@router.post("/request_password_reset")
+@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
+async def request_password_reset(
     request: Request,
-    email: str,
+    user: UserEmail,
     db: Session = Depends(get_db),
 ) -> Dict[str, str]:
     """Sends out a link for password reset"""
-    logger.info(f"Email: {email[:5]} requested a password reset")
-    email_token = DatabaseOperations(db).update_email_token(email)
-    EmailServices().send_reset_email(email, email_token)
+    logger.info(f"Email: '{user.email[:5]}...' requested a password reset")
+    email_token = DatabaseOperations(db).update_email_token(user.email)
+    EmailServices().send_reset_email(user.email, email_token)
     return {"message": "Password reset email sent successfully"}
 
 
-@router.post("/reset_password/{token}")  # Might be wokring. time for test
-@rate_limit(authenticated_limit=1, unauthenticated_limit=1)
+@router.post("/reset_password/{token}")
+@rate_limit(authenticated_limit=10, unauthenticated_limit=10)
 async def reset_password(
     request: Request,
-    new_password: str,
-    email_token: str,
+    data: PasswordReset,
     db: Session = Depends(get_db),
 ) -> Dict[str, str]:
     """Resets a user's password"""
-    logger.info(f"Resetting password for email token: {email_token[:5]}...")
-    user = DatabaseOperations(db).reset_password(email_token, new_password)
-    user_data = UserLogin(email=user.email, password=new_password)
+    logger.info(
+        f"Resetting password for email token: {data.email_token[:5]}..."
+    )
+    user = DatabaseOperations(db).reset_password(
+        data.email_token, data.new_password
+    )
+    user_data = UserLogin(email=user.email, password=data.new_password)
     auth_token = DatabaseOperations(db).login_user(user_data)
     return {"token": auth_token}

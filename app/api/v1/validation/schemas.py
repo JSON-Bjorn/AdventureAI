@@ -58,3 +58,8 @@ class UserProfileResponse(BaseModel):
 
 class EmailToken(BaseModel):
     token: str
+
+
+class PasswordReset(BaseModel):
+    new_password: str
+    email_token: str
