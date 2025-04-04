@@ -1,4 +1,5 @@
-from typing import Optional, List
+# External improts
+from typing import List
 from datetime import datetime
 from uuid import UUID
 from sqlalchemy import (
@@ -18,9 +19,10 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.dialects.postgresql import UUID as SQLUUID, JSONB
+
+# Internal imports
 from app.api.logger.logger import get_logger
 
-# Create a dedicated logger for models
 logger = get_logger("app.database.models")
 
 
@@ -28,26 +30,25 @@ class Base(DeclarativeBase):
     pass
 
 
-# Set up model event listeners
 @event.listens_for(Base, "after_insert", propagate=True)
 def log_insert(mapper, connection, target):
     model_name = target.__class__.__name__
     primary_key = get_primary_key_value(target)
-    logger.info(f"Created {model_name} with id {primary_key}")
+    logger.info(f"Created {model_name} with id {str(primary_key)[:10]}...")
 
 
 @event.listens_for(Base, "after_update", propagate=True)
 def log_update(mapper, connection, target):
     model_name = target.__class__.__name__
     primary_key = get_primary_key_value(target)
-    logger.info(f"Updated {model_name} with id {primary_key}")
+    logger.info(f"Updated {model_name} with id {str(primary_key)[:10]}...")
 
 
 @event.listens_for(Base, "after_delete", propagate=True)
 def log_delete(mapper, connection, target):
     model_name = target.__class__.__name__
     primary_key = get_primary_key_value(target)
-    logger.info(f"Deleted {model_name} with id {primary_key}")
+    logger.info(f"Deleted {model_name} with id {str(primary_key)[:10]}...")
 
 
 def get_primary_key_value(target):
