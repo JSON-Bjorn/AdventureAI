@@ -6,8 +6,9 @@ class Settings(BaseSettings):
 
     DB_URL: str
     OPENAI_API_KEY: str
-    STABLE_DIFFUSION_PORT: str
-    MISTRAL_PORT: str
+    SD_ENDPOINT: str
+    SD_API_KEY: str
+    MISTRAL_ENDPOINT: str
     MAILGUN_API_KEY: str
     MAILGUN_DOMAIN: str
     MAILGUN_EMAIL: str

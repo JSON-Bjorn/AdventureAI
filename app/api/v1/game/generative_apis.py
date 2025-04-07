@@ -95,10 +95,7 @@ class ImageGeneration(Loggable):
 
     def __init__(self) -> None:
         super().__init__()
-        self.endpoint = settings.STABLE_DIFFUSION_PORT
-        self.logger.info(
-            "ImageGeneration initialized with endpoint: {self.endpoint}"
-        )
+        self.logger.info("ImageGeneration initialized")
 
     async def api_call(self, prompt: str):
         """
@@ -113,8 +110,13 @@ class ImageGeneration(Loggable):
         """
         self.logger.info("Making Stable Diffusion API call")
         self.logger.debug(f"Image prompt length: {len(prompt)}")
+        params = {
+            "prompt": prompt,
+            "x-api-key": settings.SD_API_KEY,
+        }
+        url = settings.SD_ENDPOINT
         try:
-            response = get(f"{self.endpoint}/generate?prompt={prompt}")
+            response = get(url, params=params)
             if response.status_code == 200:
                 byte64_image = response.json()["image"]
                 image_size = len(byte64_image) / 1000
