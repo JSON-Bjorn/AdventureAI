@@ -19,3 +19,4 @@ node_modules/
 static/images/
 static/audio/
 logs/
+masterkey.pem
