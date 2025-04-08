@@ -307,6 +307,8 @@ class DatabaseOperations(Loggable):
         self.db.execute(stmt)
         self.db.commit()
 
+        return token
+
     def _delete_email_tokens(self, email: str):
         stmt = delete(EmailTokens).where(EmailTokens.email == email)
         self.db.execute(stmt)
