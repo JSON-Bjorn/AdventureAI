@@ -275,9 +275,6 @@ class DatabaseOperations(Loggable):
 
     def create_email_token(self, user: UserCreate) -> str:
         """Generates new token and creates a row in the EmailTokens table"""
-        self.logger.info(
-            f"Creating email token for user: {user.email[:5]}..."
-        )
         if not self._validate_email(user.email):
             raise HTTPException(
                 status_code=400,
@@ -288,6 +285,18 @@ class DatabaseOperations(Loggable):
                 status_code=400,
                 detail="User with this email already exists",
             )
+
+        try:
+            token = self._post_email_token(user)
+        except IntegrityError:
+            # If the user never clicked the activation
+            self._delete_email_tokens(email=user.email)
+            token = self._post_email_token(user)
+
+        return token
+
+    def _post_email_token(self, user: UserCreate) -> str:
+        """Creates a new email-token row for a user"""
         hashed_pw = self._hash_password(user.password)
         token = self.generate_token()
         stmt = insert(EmailTokens).values(
@@ -297,7 +306,6 @@ class DatabaseOperations(Loggable):
         )
         self.db.execute(stmt)
         self.db.commit()
-        return token
 
     def _delete_email_tokens(self, email: str):
         stmt = delete(EmailTokens).where(EmailTokens.email == email)
