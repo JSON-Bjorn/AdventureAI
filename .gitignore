@@ -10,6 +10,7 @@ __pycache__/
 json
 .zip
 zip
+.pem
 .gguf
 gguf
 /models
