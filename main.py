@@ -31,7 +31,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://127.0.0.1:3000",
+        "http://0.0.0.0:3000",
     ],  # Include both localhost and IP
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
@@ -45,4 +45,4 @@ app_logger.info("API routes registered")
 
 if __name__ == "__main__":
     app_logger.info("Starting uvicorn server")
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
