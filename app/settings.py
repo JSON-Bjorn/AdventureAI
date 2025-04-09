@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     MAILGUN_DOMAIN: str
     MAILGUN_EMAIL: str
     FRONTEND_URL: str
+    SD_EC2_ID: str
+    START_LAMBDA_NAME: str
 
 
 settings = Settings()

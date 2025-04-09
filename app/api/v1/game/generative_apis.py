@@ -4,6 +4,9 @@ from openai import OpenAI
 from fastapi import HTTPException
 from urllib3.exceptions import NewConnectionError
 from requests.exceptions import ConnectionError
+import boto3
+import json
+import asyncio
 
 # Internal imports
 from app.api.v1.game.instructions import instructions
@@ -108,6 +111,14 @@ class ImageGeneration(Loggable):
         byte64_image(str): The image in base64 format
             This is decoded in the frontend!!
         """
+        self.logger.info("Ensuring Stable Diffusion EC2 is running...")
+        ec2_running = await self._start_ec2(ec2_id=settings.SD_EC2_ID)
+        if not ec2_running:
+            raise HTTPException(
+                status_code=500,
+                detail="Could not start the image generation server. Please try again later.",
+            )
+
         self.logger.info("Making Stable Diffusion API call")
         self.logger.debug(f"Image prompt length: {len(prompt)}")
         params = {
@@ -144,6 +155,36 @@ class ImageGeneration(Loggable):
                 status_code=500,
                 detail=f"Error generating image: {e}",
             )
+
+    async def _start_ec2(self, ec2_id: str, max_attempts=15):
+        """
+        Calls the lambda function that starts the EC2 instance.
+
+        Returns:
+        bool: True if the EC2 instance is running, False if we never got a 200 response.
+        """
+        lambda_client = boto3.client("lambda")
+        payload = {"instance_id": ec2_id}
+
+        attempt = 0
+        wait_time = 1
+
+        while attempt < max_attempts:
+            response = lambda_client.invoke(
+                FunctionName=settings.START_LAMBDA_NAME,
+                InvocationType="RequestResponse",
+                Payload=json.dumps(payload),
+            )
+            lambda_response = json.loads(response["Payload"].read().decode())
+            status_code = lambda_response.get("statusCode")
+            if status_code == 200:
+                return True
+            attempt += 1
+            if attempt < max_attempts:
+                await asyncio.sleep(wait_time)
+                wait_time = min(wait_time * 2, 30)
+
+        return False
 
 
 class SoundGeneration(Loggable):
