@@ -1,6 +1,16 @@
+<<<<<<< HEAD
 # Currently in production
 
 Below is notes on how the project is going, what we are doing and what to do next.
+=======
+# Allmän info om denna branch
+Den här branchen är tänkt för att fungera för att kunna köra spelet lokalt. För tillfället kommer vi inte göra några större ändringar i denna branch.
+
+# Setup
+- Se till att köra start.bat för att installera alla nödvändiga paket.
+
+- Kör adventureai.py för att starta applikationen
+>>>>>>> 35a3ecb07d66e50cac44980f21107ff46cfb5c1f
 
 # Current state
 
@@ -14,6 +24,7 @@ Pretty big update - Rate Limiting
 
 Det enda vi behöver tänka på är att använda decoratorn under requires_auth-decoratorn.
 
+<<<<<<< HEAD
 ### How the rate limiter works
 
 - När en endpoint blir requested av en användare:
@@ -24,9 +35,13 @@ Det enda vi behöver tänka på är att använda decoratorn under requires_auth-
   - @rate_limit kontrollerar att vi inte gjort för många requests under den senaste minuten.
 
 # Hur vi kör det lokalt
+=======
+# Installation Guide for Illustrator Agent
+>>>>>>> 35a3ecb07d66e50cac44980f21107ff46cfb5c1f
 
 Starta programmet från root katalogen genom att köra kommandot:
 
+<<<<<<< HEAD
 ```bash
 python main.py
 ```
@@ -57,3 +72,9 @@ Det skulle dock kräva en omfaktorering som jag helt enkelt inte orkar med just 
 
 - /reset_password
   Kommer kräva någon slags emailtjänst.
+=======
+## 2. Environment Setup
+Add these lines to your `.env` file (create it if it doesn't exist):
+OPENAI_API_KEY="sk-proj-****************"
+IMAGE_MODEL="juggernautXL_juggXILightningByRD"
+>>>>>>> 35a3ecb07d66e50cac44980f21107ff46cfb5c1f
