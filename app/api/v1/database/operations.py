@@ -16,6 +16,7 @@ We also need to change the way we call other methods within this class if they a
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation
 from fastapi import HTTPException
 from typing import Dict, List, Any
 from uuid import UUID
@@ -69,7 +70,7 @@ class DatabaseOperations(Loggable):
                 self.db.commit()
                 self.db.refresh(db_user)
                 break
-            except IntegrityError:
+            except (UniqueViolation, IntegrityError):
                 self.logger.error(
                     "Error posting to Users table due to UUID unique constraint. "
                     "If this happened, reality is a simulation."
@@ -105,7 +106,9 @@ class DatabaseOperations(Loggable):
         stmt = delete(Tokens).where(Tokens.user_id == user_id)
         self.db.execute(stmt)
         self.db.commit()
-        self.logger.info(f"Removed all tokens for user ID: {str(user_id)[:10]}...")
+        self.logger.info(
+            f"Removed all tokens for user ID: {str(user_id)[:10]}..."
+        )
 
     def update_user(self, user_id: UUID, user: UserUpdate):
         """Updates a user in the database"""
@@ -115,7 +118,12 @@ class DatabaseOperations(Loggable):
                 nud[key] = value
         if "password" in nud:
             nud["password"] = self._hash_password(nud["password"])
-        stmt = update(Users).where(Users.id == user_id).values(**nud).returning(Users)
+        stmt = (
+            update(Users)
+            .where(Users.id == user_id)
+            .values(**nud)
+            .returning(Users)
+        )
         result = self.db.execute(stmt)
         updated_user = result.scalar_one_or_none()
         self.db.commit()
@@ -201,7 +209,9 @@ class DatabaseOperations(Loggable):
             )
         else:
             self.db.commit()
-            self.logger.info(f"Successfully deleted user ID: {str(user_id)[:10]}...")
+            self.logger.info(
+                f"Successfully deleted user ID: {str(user_id)[:10]}..."
+            )
         self._delete_email_tokens(email)
         return {"message": "User deleted successfully"}
 
@@ -233,7 +243,9 @@ class DatabaseOperations(Loggable):
 
     def _create_access_token(self, user_id: UUID) -> str:
         """Generates a new authorization token for a user and deletes all their previous tokens"""
-        self.logger.debug(f"Creating access token for user ID: {str(user_id)[:10]}...")
+        self.logger.debug(
+            f"Creating access token for user ID: {str(user_id)[:10]}..."
+        )
         self.logout_user(user_id)
         token = self.generate_token()
         current_time = datetime.now()
@@ -257,7 +269,9 @@ class DatabaseOperations(Loggable):
             )
         else:
             user_id = token_data.user_id
-            self.logger.info(f"Token validated for user: {str(user_id)[:10]}...")
+            self.logger.info(
+                f"Token validated for user: {str(user_id)[:10]}..."
+            )
             return user_id
 
     def create_email_token(self, user: UserCreate) -> str:
@@ -272,14 +286,12 @@ class DatabaseOperations(Loggable):
                 status_code=400,
                 detail="User with this email already exists",
             )
-
         try:
             token = self._post_email_token(user)
-        except IntegrityError:
-            # If the user never clicked the activation
+        except (UniqueViolation, IntegrityError):
+            self.db.rollback()
             self._delete_email_tokens(email=user.email)
             token = self._post_email_token(user)
-
         return token
 
     def _post_email_token(self, user: UserCreate) -> str:
@@ -320,7 +332,9 @@ class DatabaseOperations(Loggable):
         result = self.db.execute(stmt)
         token_data = result.scalar_one_or_none()
         if not token_data:
-            raise HTTPException(status_code=404, detail="Email not registered")
+            raise HTTPException(
+                status_code=404, detail="Email not registered"
+            )
         new_token = self.generate_token()
         stmt = (
             update(EmailTokens)
@@ -408,7 +422,9 @@ class DatabaseOperations(Loggable):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        created_date = user.created_at.strftime("%Y-%m-%d") if user.created_at else None
+        created_date = (
+            user.created_at.strftime("%Y-%m-%d") if user.created_at else None
+        )
 
         return {
             "email": user.email,
