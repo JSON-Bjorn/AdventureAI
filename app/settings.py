@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str
     SD_EC2_ID: str
     START_LAMBDA_NAME: str
+    REGION: str
 
 
 settings = Settings()

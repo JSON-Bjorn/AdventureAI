@@ -163,7 +163,7 @@ class ImageGeneration(Loggable):
         Returns:
         bool: True if the EC2 instance is running, False if we never got a 200 response.
         """
-        lambda_client = boto3.client("lambda")
+        lambda_client = boto3.client("lambda", region_name=settings.REGION)
         payload = {"instance_id": ec2_id}
 
         attempt = 0
