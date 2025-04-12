@@ -33,6 +33,12 @@ async def fetch_story(
     user_id: UUID = None,
 ):
     """Fetches a starting story from the database."""
+    from fastapi import HTTPException
+
+    raise HTTPException(
+        status_code=500,
+        detail="Fetching stories is not available at this time",
+    )
     logger.info(
         f"User ID: {str(user_id)[:5]}... "
         "was granted access to /fetch_story"
