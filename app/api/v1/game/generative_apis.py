@@ -32,7 +32,7 @@ class TextGeneration(Loggable):
         super().__init__()
         self.instructions = instructions
         self.logger.info("TextGeneration initialized")
-        self.endpoint = settings.MISTRAL_PORT
+        self.endpoint = settings.MISTRAL_ENDPOINT
         self.openai = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     async def api_call(self, prompt: str, max_tokens: int = 1000):
